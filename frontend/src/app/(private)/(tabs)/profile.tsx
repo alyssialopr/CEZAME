@@ -15,6 +15,9 @@ import {
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useProgress } from "@/hooks/useProgress";
+import { useAuth } from "@/providers/AuthProvider";
+
 const BADGES = [
   { key: "premier-pas", label: "Premier Pas", icon: Footprints, color: "#9B6CFF", unlocked: true },
   { key: "as-du-budget", label: "As du Budget", icon: PiggyBank, color: "#5FC97A", unlocked: true },
@@ -22,7 +25,23 @@ const BADGES = [
   { key: "pro-impot", label: "Pro de l'Impôt", icon: Lock, color: "#D4D0DB", unlocked: false },
 ];
 
+const RANK_INFO: Record<'bronze' | 'silver' | 'gold' | 'diamond' | 'rainbow', { label: string; color: string }> = {
+  bronze: { label: "Bronze", color: "#CD7F32" },
+  silver: { label: "Argent", color: "#9CA3AF" },
+  gold: { label: "Or", color: "#E8B923" },
+  diamond: { label: "Diamant", color: "#4FC3D9" },
+  rainbow: { label: "Arc-en-ciel", color: "#B14EFF" },
+};
+
 export default function ProfileScreen() {
+  const { user } = useAuth();
+  const { data: progress } = useProgress();
+
+  const username = (user?.user_metadata?.username as string | undefined) || "Explorateur";
+  const streak = progress?.streak ?? 0;
+  const xp = progress?.xp ?? 0;
+  const rank = RANK_INFO[progress?.rank ?? "bronze"];
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
@@ -47,7 +66,7 @@ export default function ProfileScreen() {
             <UserRound size={36} color="#8B5CF6" />
           </View>
 
-          <Text style={styles.name}>Alex le Débrouillard</Text>
+          <Text style={styles.name}>{username}</Text>
           <Text style={styles.subtitle}>Explorateur Administratif</Text>
         </View>
 
@@ -56,7 +75,7 @@ export default function ProfileScreen() {
             <View style={[styles.statIcon, { backgroundColor: "#FFE9CC" }]}>
               <Flame size={20} color="#FF9800" />
             </View>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>{streak}</Text>
             <Text style={styles.statLabel}>JOURS DE SUITE</Text>
           </View>
 
@@ -64,7 +83,7 @@ export default function ProfileScreen() {
             <View style={[styles.statIcon, { backgroundColor: "#D6F3FB" }]}>
               <Zap size={20} color="#29B6F6" />
             </View>
-            <Text style={styles.statValue}>1250</Text>
+            <Text style={styles.statValue}>{xp}</Text>
             <Text style={styles.statLabel}>XP TOTAL</Text>
           </View>
         </View>
@@ -72,11 +91,11 @@ export default function ProfileScreen() {
         <View style={styles.leagueCard}>
           <Text style={styles.leagueLabel}>LIGUE ACTUELLE</Text>
           <View style={styles.leagueRow}>
-            <Shield size={20} color="#CD7F32" />
-            <Text style={styles.leagueName}>Bronze</Text>
+            <Shield size={20} color={rank.color} />
+            <Text style={[styles.leagueName, { color: rank.color }]}>{rank.label}</Text>
           </View>
           <View style={styles.leagueProgressTrack}>
-            <View style={styles.leagueProgressFill} />
+            <View style={[styles.leagueProgressFill, { backgroundColor: rank.color }]} />
           </View>
         </View>
 
@@ -105,7 +124,9 @@ export default function ProfileScreen() {
             contentFit="contain"
           />
           <View style={styles.bubble}>
-            <Text style={styles.bubbleText}>Tu es en feu, Alex !{"\n"}Continue comme ça 🔥</Text>
+            <Text style={styles.bubbleText}>
+              Tu es en feu, {username} !{"\n"}Continue comme ça 🔥
+            </Text>
           </View>
         </View>
       </ScrollView>
