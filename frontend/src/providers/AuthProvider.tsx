@@ -20,8 +20,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        // Validate session against the server to check if user was deleted
+        const { error } = await supabase.auth.getUser();
+        if (error) {
+          await supabase.auth.signOut();
+          setSession(null);
+        } else {
+          setSession(session);
+        }
+      } else {
+        setSession(null);
+      }
       setIsInitialized(true);
     });
 
