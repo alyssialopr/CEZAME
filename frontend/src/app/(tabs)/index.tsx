@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import {
   SafeAreaView,
   ScrollView,
@@ -21,6 +22,8 @@ import {
 } from "lucide-react-native";
 
 export default function HomeScreen() {
+  const router = useRouter();
+
   return (
     <SafeAreaView style={styles.container}>
       {/* HEADER */}
@@ -72,7 +75,9 @@ export default function HomeScreen() {
               <Text style={styles.startText}>START</Text>
             </View>
 
-            <TouchableOpacity style={styles.mainStep}>
+            <TouchableOpacity
+              style={styles.mainStep}
+              onPress={() => router.push("/lesson")}>
               <PiggyBank color="#4B1D9A" size={42} />
             </TouchableOpacity>
           </View>
@@ -86,7 +91,7 @@ export default function HomeScreen() {
             </View>
 
             <Image
-              source={require("../images/RicoHappy.svg")}
+              source={require("@/images/RicoHappy.svg")}
               style={styles.mascot}
               contentFit="contain"
             />
