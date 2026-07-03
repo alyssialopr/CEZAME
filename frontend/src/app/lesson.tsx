@@ -10,6 +10,8 @@ import {
   View,
 } from "react-native";
 
+import { LESSON_STEPS } from "@/constants/lesson";
+
 type Option = {
   letter: "A" | "B" | "C";
   text: string;
@@ -23,7 +25,7 @@ type Question = {
 };
 
 const QUESTIONS: Question[] = [
-  {
+ {
     category: "Ouvrir un compte bancaire",
     prompt: "Lequel est un justificatif de domicile ?",
     options: [
@@ -34,11 +36,65 @@ const QUESTIONS: Question[] = [
   },
   {
     category: "Ouvrir un compte bancaire",
-    prompt: "Quel document prouve votre identité ?",
+    prompt: "Quel document prouve ton identité ?",
     options: [
       { letter: "A", text: "Ticket de caisse" },
       { letter: "B", text: "Carte d'identité", correct: true },
       { letter: "C", text: "Photo de vacances" },
+    ],
+  },
+  {
+    category: "Ouvrir un compte bancaire",
+    prompt: "Avant 18 ans, qui doit signer ?",
+    options: [
+      { letter: "A", text: "Personne" },
+      { letter: "B", text: "Tes parents", correct: true },
+      { letter: "C", text: "Ton employeur" },
+    ],
+  },
+  {
+    category: "Ouvrir un compte bancaire",
+    prompt: "Une banque en ligne, c'est :",
+    options: [
+      { letter: "A", text: "Sans agence physique", correct: true },
+      { letter: "B", text: "Réservée aux pros" },
+      { letter: "C", text: "Sans carte bancaire" },
+    ],
+  },
+  {
+    category: "Ouvrir un compte bancaire",
+    prompt: "La convention de compte, c'est :",
+    options: [
+      { letter: "A", text: "Le contrat avec ta banque", correct: true },
+      { letter: "B", text: "Un code promo" },
+      { letter: "C", text: "Ton code carte" },
+    ],
+  },
+  {
+    category: "Ouvrir un compte bancaire",
+    prompt: "Pour activer ta carte, tu :",
+    options: [
+      { letter: "A", text: "Fais un premier paiement/retrait", correct: true },
+      { letter: "B", text: "Attends 6 mois" },
+      { letter: "C", text: "Appelles la police" },
+    ],
+  },
+  {
+    category: "Ouvrir un compte bancaire",
+    prompt: "Que regarder avant de choisir une banque ?",
+    options: [
+      { letter: "A", text: "Les frais de carte", correct: true },
+      { letter: "B", text: "La couleur du logo" },
+      { letter: "C", text: "Le nombre d'agences dans le monde" },
+    ],
+  },
+  {
+    category: "Ouvrir un compte bancaire",
+    prompt: "Un compte courant sert surtout à :",
+    options: [
+      { letter: "A", text: "Recevoir et payer au quotidien", correct: true },
+      { letter: "B", text: "Faire des placements boursiers" },
+      { letter: "C", text: "Stocker de l'or" },
     ],
   },
 ];
@@ -48,15 +104,18 @@ export default function LessonScreen() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [hearts, setHearts] = useState(5);
+  const [correctCount, setCorrectCount] = useState(0);
 
   const question = QUESTIONS[questionIndex];
   const isLastQuestion = questionIndex === QUESTIONS.length - 1;
-  const progress = (questionIndex + (selectedLetter ? 1 : 0)) / QUESTIONS.length;
+  const progress = (1 + questionIndex + (selectedLetter ? 1 : 0)) / LESSON_STEPS;
 
   function handleSelect(option: Option) {
     if (selectedLetter) return;
     setSelectedLetter(option.letter);
-    if (!option.correct) {
+    if (option.correct) {
+      setCorrectCount((c) => c + 1);
+    } else {
       setHearts((h) => Math.max(0, h - 1));
     }
   }
@@ -64,7 +123,14 @@ export default function LessonScreen() {
   function handleContinue() {
     if (!selectedLetter) return;
     if (isLastQuestion) {
-      router.back();
+      router.push({
+        pathname: '/score',
+        params: {
+          correct: String(correctCount),
+          total: String(QUESTIONS.length),
+          hearts: String(hearts),
+        },
+      });
       return;
     }
     setQuestionIndex((i) => i + 1);
@@ -206,7 +272,7 @@ const styles = StyleSheet.create({
   },
   bubbleText: {
     fontWeight: "700",
-    fontSize: 18,
+    fontSize: 16,
     color: "#0D2A2A",
   },
   options: {

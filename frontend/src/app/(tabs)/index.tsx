@@ -77,7 +77,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.mainStep}
-              onPress={() => router.push("/lesson")}>
+              onPress={() => router.push("/lesson-content")}>
               <PiggyBank color="#4B1D9A" size={42} />
             </TouchableOpacity>
           </View>
