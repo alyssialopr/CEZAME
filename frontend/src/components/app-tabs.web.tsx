@@ -7,6 +7,7 @@ import {
   TabListProps,
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
+import { ExternalLink as LinkIcon } from 'lucide-react-native';
 import { Pressable, useColorScheme, View, StyleSheet } from 'react-native';
 
 import { ExternalLink } from './external-link';
@@ -24,8 +25,8 @@ export default function AppTabs() {
           <TabTrigger name="home" href="/" asChild>
             <TabButton>Home</TabButton>
           </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>Explore</TabButton>
+          <TabTrigger name="profile" href="/profile" asChild>
+            <TabButton>Profil</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -65,7 +66,8 @@ export function CustomTabList(props: TabListProps) {
             <ThemedText type="link">Docs</ThemedText>
             <SymbolView
               tintColor={colors.text}
-              name={{ ios: 'arrow.up.right.square', web: 'link' }}
+              name="arrow.up.right.square"
+              fallback={<LinkIcon color={colors.text} size={12} />}
               size={12}
             />
           </Pressable>
