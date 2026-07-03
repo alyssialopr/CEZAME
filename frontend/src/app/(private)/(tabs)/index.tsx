@@ -1,7 +1,6 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +19,7 @@ import {
   Trophy,
   Wallet,
 } from "lucide-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const router = useRouter();

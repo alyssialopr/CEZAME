@@ -2,7 +2,6 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { ArrowDown, Heart, User, UserCheck, X } from "lucide-react-native";
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +10,7 @@ import {
 } from "react-native";
 
 import { LESSON_STEPS } from "@/constants/lesson";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LessonContentScreen() {
   const router = useRouter();

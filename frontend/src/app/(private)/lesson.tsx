@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { Heart, X } from "lucide-react-native";
 import { useState } from "react";
 import {
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,6 +10,7 @@ import {
 } from "react-native";
 
 import { LESSON_STEPS } from "@/constants/lesson";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Option = {
   letter: "A" | "B" | "C";
@@ -25,7 +25,7 @@ type Question = {
 };
 
 const QUESTIONS: Question[] = [
- {
+  {
     category: "Ouvrir un compte bancaire",
     prompt: "Lequel est un justificatif de domicile ?",
     options: [
