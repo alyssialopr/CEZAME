@@ -4,15 +4,21 @@ import { Flame, Zap } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ConfettiCannon from "react-native-confetti-cannon";
+import { useProgress } from "@/hooks/useProgress";
 
 export default function ScoreScreen() {
   const router = useRouter();
+  const { data: progress } = useProgress();
 
   function handleFinish() {
     router.dismissTo("/");
   }
 
   const { width, height } = Dimensions.get("window");
+  
+  const streak = progress?.streak || 0;
+  // Compute how many flames to color out of 7
+  const activeFlames = streak === 0 ? 0 : streak % 7 === 0 ? 7 : streak % 7;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -36,16 +42,16 @@ export default function ScoreScreen() {
 
           <View style={styles.streakCard}>
             <View style={styles.flamesRow}>
-              {[1, 2, 3, 4, 5, 6, 7].map((day, i) => (
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
                 <Flame
-                  key={i}
+                  key={day}
                   size={32}
-                  color={day <= 2 ? "#FF9600" : "#E5E5E5"}
-                  fill={day <= 2 ? "#FF9600" : "#E5E5E5"}
+                  color={day <= activeFlames ? "#FF9600" : "#E5E5E5"}
+                  fill={day <= activeFlames ? "#FF9600" : "#E5E5E5"}
                 />
               ))}
             </View>
-            <Text style={styles.streakText}>12 jours de suite</Text>
+            <Text style={styles.streakText}>{streak} jours de suite</Text>
           </View>
 
           <View style={styles.xpPill}>

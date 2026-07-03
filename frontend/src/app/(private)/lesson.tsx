@@ -2,15 +2,11 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Heart, X } from "lucide-react-native";
 import { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { LESSON_STEPS } from "@/constants/lesson";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useProgress, useUpdateStreak } from "@/hooks/useProgress";
 
 type Option = {
   letter: "A" | "B" | "C";
@@ -106,6 +102,9 @@ export default function LessonScreen() {
   const [hearts, setHearts] = useState(5);
   const [correctCount, setCorrectCount] = useState(0);
 
+  const { data: progressData } = useProgress();
+  const updateStreak = useUpdateStreak();
+
   const question = QUESTIONS[questionIndex];
   const isLastQuestion = questionIndex === QUESTIONS.length - 1;
   const progress = (1 + questionIndex + (selectedLetter ? 1 : 0)) / LESSON_STEPS;
@@ -120,9 +119,17 @@ export default function LessonScreen() {
     }
   }
 
-  function handleContinue() {
+  async function handleContinue() {
     if (!selectedLetter) return;
     if (isLastQuestion) {
+      if (progressData) {
+        try {
+          await updateStreak.mutateAsync(progressData);
+        } catch (e) {
+          console.error("Error updating streak", e);
+        }
+      }
+
       router.push({
         pathname: '/score',
         params: {

@@ -20,9 +20,11 @@ import {
   Wallet,
 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useProgress } from "@/hooks/useProgress";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { data: progress } = useProgress();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -35,9 +37,10 @@ export default function HomeScreen() {
 
         <View style={styles.stats}>
           <View style={styles.stat}>
-            <Flame size={18} color="#FF9800" />
-            <Text style={styles.orange}>12</Text>
+            <Flame size={18} color={progress?.streak && progress.streak > 0 ? "#FF9800" : "#E5E5E5"} />
+            <Text style={styles.orange}>{progress?.streak || 0}</Text>
           </View>
+
 
           <View style={styles.stat}>
             <Gem size={18} color="#29B6F6" />
