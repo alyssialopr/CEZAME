@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import {
   Flame,
   Footprints,
@@ -34,6 +35,7 @@ const RANK_INFO: Record<'bronze' | 'silver' | 'gold' | 'diamond' | 'rainbow', { 
 };
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const { data: progress } = useProgress();
 
@@ -45,10 +47,12 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
-        <View style={styles.logoContainer}>
+        <TouchableOpacity
+          style={styles.logoContainer}
+          onPress={() => router.push("/categories")}>
           <Landmark color="#8B5CF6" size={20} />
           <Text style={styles.logo}>CEZAME</Text>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.stat}>
           <Gem size={18} color="#29B6F6" />

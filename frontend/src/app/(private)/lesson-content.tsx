@@ -1,22 +1,54 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { ArrowDown, Heart, User, UserCheck, X } from "lucide-react-native";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Heart, X } from "lucide-react-native";
+import { useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LESSON_STEPS } from "@/constants/lesson";
-import { SafeAreaView } from "react-native-safe-area-context";
+
+const LESSON_TITLE = "Gérer ton argent au quotidien";
+
+type LessonScreen = {
+  title: string;
+  body: string;
+  tip?: string;
+};
+
+const SCREENS: LessonScreen[] = [
+  {
+    title: "Ton compte au quotidien",
+    body: "Ton compte courant sert à recevoir de l'argent et payer tes dépenses. Le RIB est sa « carte d'identité » : tu le donnes pour recevoir un virement (salaire, CAF) ou autoriser un prélèvement (abonnement, loyer). Un prélèvement peut toujours être annulé depuis ta banque.",
+  },
+  {
+    title: "Le découvert et les agios",
+    body: "Être à découvert = avoir un solde négatif. Si ta banque l'autorise, ce n'est pas gratuit : elle prélève des agios (des frais). Sans autorisation, les frais explosent et des paiements peuvent être rejetés. Le découvert n'est pas de l'argent en plus, c'est une dette.",
+    tip: "Bon réflexe : active les notifications de solde de ton appli bancaire — tu vois le découvert arriver.",
+  },
+  {
+    title: "Épargner, même un peu",
+    body: "Le Livret A est l'épargne de base : sans risque, sans frais, et l'argent reste disponible à tout moment. Une méthode simple pour ton budget : la règle 50/30/20 — environ 50 % pour les besoins (loyer, courses), 30 % pour les envies, 20 % pour l'épargne.",
+  },
+  {
+    title: "Les réflexes qui sauvent",
+    body: "Carte perdue ou volée : fais opposition immédiatement depuis l'appli ou par téléphone — chaque minute compte. Avant de choisir une banque, compare les frais réels : cotisation de carte, tenue de compte, frais à l'étranger. Ils varient beaucoup d'une banque à l'autre.",
+  },
+];
 
 export default function LessonContentScreen() {
   const router = useRouter();
+  const [screenIndex, setScreenIndex] = useState(0);
+
+  const screen = SCREENS[screenIndex];
+  const isLastScreen = screenIndex === SCREENS.length - 1;
+  const progress = (screenIndex + 1) / LESSON_STEPS;
 
   function handleContinue() {
-    router.push("/lesson");
+    if (isLastScreen) {
+      router.push("/lesson");
+      return;
+    }
+    setScreenIndex((i) => i + 1);
   }
 
   return (
@@ -27,7 +59,7 @@ export default function LessonContentScreen() {
         </TouchableOpacity>
 
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${(1 / LESSON_STEPS) * 100}%` }]} />
+          <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
         </View>
 
         <View style={styles.hearts}>
@@ -37,7 +69,7 @@ export default function LessonContentScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Ouvrir un compte en banque</Text>
+        <Text style={styles.title}>{LESSON_TITLE}</Text>
 
         <View style={styles.speechWrapper}>
           <Image
@@ -46,38 +78,19 @@ export default function LessonContentScreen() {
             contentFit="contain"
           />
           <View style={styles.bubble}>
-            <Text style={styles.bubbleText}>Mineur vs Majeur : qui ouvre le compte ?</Text>
+            <Text style={styles.bubbleText}>{screen.title}</Text>
           </View>
         </View>
 
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.cardIcon, styles.cardIconMinor]}>
-              <User color="#B8860B" size={20} />
-            </View>
-            <Text style={styles.cardTitle}>Avant 18 ans</Text>
-          </View>
-          <Text style={styles.cardText}>
-            Tu peux déjà avoir un compte, mais tes parents doivent signer avec toi. C&apos;est un
-            compte &quot;avec autorisation parentale&quot; : ils peuvent voir tes opérations et
-            fixer des limites (plafond carte, retraits).
-          </Text>
+          <Text style={styles.cardText}>{screen.body}</Text>
         </View>
 
-        <ArrowDown color="#AFAFB8" size={22} style={styles.arrow} />
-
-        <View style={[styles.card, styles.cardHighlighted]}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.cardIcon, styles.cardIconMajor]}>
-              <UserCheck color="#FFFFFF" size={20} />
-            </View>
-            <Text style={styles.cardTitle}>Après 18 ans</Text>
+        {screen.tip && (
+          <View style={[styles.card, styles.tipCard]}>
+            <Text style={styles.tipText}>💡 {screen.tip}</Text>
           </View>
-          <Text style={styles.cardText}>
-            Le compte devient 100% le tien. Tu signes seul la convention de compte, tu choisis ta
-            carte et tes options, et tes parents n&apos;ont plus aucun regard dessus.
-          </Text>
-        </View>
+        )}
       </ScrollView>
 
       <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
@@ -158,42 +171,20 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "transparent",
   },
-  cardHighlighted: {
-    backgroundColor: "#EAF9E0",
-    borderColor: "#86D95B",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 10,
-  },
-  cardIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardIconMinor: {
-    backgroundColor: "#FBE7A1",
-  },
-  cardIconMajor: {
-    backgroundColor: "#86D95B",
-  },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#000000",
-  },
   cardText: {
     fontSize: 15,
     lineHeight: 21,
     color: "#3C3C43",
   },
-  arrow: {
-    alignSelf: "center",
-    marginVertical: 8,
+  tipCard: {
+    marginTop: 16,
+    backgroundColor: "#FFF4D9",
+  },
+  tipText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
+    color: "#8A6A0F",
   },
   continueButton: {
     marginBottom: 24,

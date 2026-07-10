@@ -2,10 +2,10 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Heart, X } from "lucide-react-native";
 import { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-import { LESSON_STEPS } from "@/constants/lesson";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { LESSON_CONTENT_SCREENS, LESSON_STEPS } from "@/constants/lesson";
 import { useProgress, useUpdateStreak } from "@/hooks/useProgress";
 
 type Option = {
@@ -18,80 +18,91 @@ type Question = {
   category: string;
   prompt: string;
   options: Option[];
+  explanation: string;
 };
 
 const QUESTIONS: Question[] = [
   {
-    category: "Ouvrir un compte bancaire",
-    prompt: "Lequel est un justificatif de domicile ?",
+    category: "Le découvert et les agios",
+    prompt: "Le découvert autorisé, c'est :",
     options: [
-      { letter: "A", text: "Facture d'électricité", correct: true },
-      { letter: "B", text: "Carte de bus" },
-      { letter: "C", text: "Selfie" },
+      { letter: "A", text: "Un solde négatif toléré, mais avec des frais", correct: true },
+      { letter: "B", text: "De l'argent gratuit prêté par la banque" },
+      { letter: "C", text: "Interdit avant 25 ans" },
     ],
+    explanation: "La banque tolère le négatif mais facture des agios. C'est une dette, pas un bonus.",
   },
   {
-    category: "Ouvrir un compte bancaire",
-    prompt: "Quel document prouve ton identité ?",
+    category: "Ton compte au quotidien",
+    prompt: "On te demande ton RIB. C'est pour :",
     options: [
-      { letter: "A", text: "Ticket de caisse" },
-      { letter: "B", text: "Carte d'identité", correct: true },
-      { letter: "C", text: "Photo de vacances" },
+      { letter: "A", text: "Recevoir un virement ou mettre en place un prélèvement", correct: true },
+      { letter: "B", text: "Payer en magasin" },
+      { letter: "C", text: "Prouver ton identité" },
     ],
+    explanation: "Le RIB identifie ton compte — indispensable pour le salaire, la CAF ou un abonnement.",
   },
   {
-    category: "Ouvrir un compte bancaire",
-    prompt: "Avant 18 ans, qui doit signer ?",
+    category: "Le découvert et les agios",
+    prompt: "Les agios, c'est :",
     options: [
-      { letter: "A", text: "Personne" },
-      { letter: "B", text: "Tes parents", correct: true },
-      { letter: "C", text: "Ton employeur" },
+      { letter: "A", text: "Des frais quand ton compte est à découvert", correct: true },
+      { letter: "B", text: "Des intérêts que la banque te verse" },
+      { letter: "C", text: "Une prime de bienvenue" },
     ],
+    explanation: "Plus tu restes à découvert longtemps, plus les agios s'accumulent.",
   },
   {
-    category: "Ouvrir un compte bancaire",
-    prompt: "Une banque en ligne, c'est :",
+    category: "Les réflexes qui sauvent",
+    prompt: "Tu perds ta carte bancaire. Tu fais quoi en premier ?",
     options: [
-      { letter: "A", text: "Sans agence physique", correct: true },
-      { letter: "B", text: "Réservée aux pros" },
-      { letter: "C", text: "Sans carte bancaire" },
+      { letter: "A", text: "Opposition immédiate (appli ou téléphone)", correct: true },
+      { letter: "B", text: "Tu attends de voir si quelqu'un l'utilise" },
+      { letter: "C", text: "Tu changes de banque" },
     ],
+    explanation:
+      "L'opposition bloque la carte instantanément. Attendre, c'est risquer de payer les achats d'un voleur.",
   },
   {
-    category: "Ouvrir un compte bancaire",
-    prompt: "La convention de compte, c'est :",
+    category: "Épargner, même un peu",
+    prompt: "Le Livret A, c'est :",
     options: [
-      { letter: "A", text: "Le contrat avec ta banque", correct: true },
-      { letter: "B", text: "Un code promo" },
-      { letter: "C", text: "Ton code carte" },
+      { letter: "A", text: "Une épargne disponible à tout moment, sans risque", correct: true },
+      { letter: "B", text: "Un compte bloqué pendant 5 ans" },
+      { letter: "C", text: "Un placement réservé aux mineurs" },
     ],
+    explanation: "Tu peux retirer quand tu veux, sans frais. C'est la première brique d'épargne idéale.",
   },
   {
-    category: "Ouvrir un compte bancaire",
-    prompt: "Pour activer ta carte, tu :",
+    category: "Ton compte au quotidien",
+    prompt: "Un prélèvement automatique, c'est :",
     options: [
-      { letter: "A", text: "Fais un premier paiement/retrait", correct: true },
-      { letter: "B", text: "Attends 6 mois" },
-      { letter: "C", text: "Appelles la police" },
+      { letter: "A", text: "Une autorisation donnée à un organisme de prélever ton compte", correct: true },
+      { letter: "B", text: "Impossible à annuler une fois activé" },
+      { letter: "C", text: "Réservé au paiement des impôts" },
     ],
+    explanation:
+      "Tu peux le révoquer à tout moment depuis ta banque, par exemple pour stopper un abonnement.",
   },
   {
-    category: "Ouvrir un compte bancaire",
-    prompt: "Que regarder avant de choisir une banque ?",
+    category: "Les réflexes qui sauvent",
+    prompt: "Les frais bancaires (carte, tenue de compte) :",
     options: [
-      { letter: "A", text: "Les frais de carte", correct: true },
-      { letter: "B", text: "La couleur du logo" },
-      { letter: "C", text: "Le nombre d'agences dans le monde" },
+      { letter: "A", text: "Varient selon les banques, il faut comparer", correct: true },
+      { letter: "B", text: "Sont fixés par l'État, identiques partout" },
+      { letter: "C", text: "Sont interdits par la loi" },
     ],
+    explanation: "D'une banque à l'autre, la même carte peut coûter 0 € ou plus de 100 € par an.",
   },
   {
-    category: "Ouvrir un compte bancaire",
-    prompt: "Un compte courant sert surtout à :",
+    category: "Épargner, même un peu",
+    prompt: "La règle 50/30/20 pour gérer son budget, c'est :",
     options: [
-      { letter: "A", text: "Recevoir et payer au quotidien", correct: true },
-      { letter: "B", text: "Faire des placements boursiers" },
-      { letter: "C", text: "Stocker de l'or" },
+      { letter: "A", text: "Besoins / envies / épargne", correct: true },
+      { letter: "B", text: "Loyer / courses / sorties" },
+      { letter: "C", text: "Un taux d'intérêt bancaire" },
     ],
+    explanation: "50 % besoins, 30 % envies, 20 % épargne — un repère simple, à adapter à ta situation.",
   },
 ];
 
@@ -107,7 +118,8 @@ export default function LessonScreen() {
 
   const question = QUESTIONS[questionIndex];
   const isLastQuestion = questionIndex === QUESTIONS.length - 1;
-  const progress = (1 + questionIndex + (selectedLetter ? 1 : 0)) / LESSON_STEPS;
+  const progress =
+    (LESSON_CONTENT_SCREENS + questionIndex + (selectedLetter ? 1 : 0)) / LESSON_STEPS;
 
   function handleSelect(option: Option) {
     if (selectedLetter) return;
@@ -161,55 +173,64 @@ export default function LessonScreen() {
         </View>
       </View>
 
-      <Text style={styles.category}>{question.category}</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.category}>{question.category}</Text>
 
-      <View style={styles.speechWrapper}>
-        <Image
-          source={require("@/images/RicoHappy.svg")}
-          style={styles.mascot}
-          contentFit="contain"
-        />
-        <View style={styles.bubble}>
-          <Text style={styles.bubbleText}>{question.prompt}</Text>
+        <View style={styles.speechWrapper}>
+          <Image
+            source={require("@/images/RicoHappy.svg")}
+            style={styles.mascot}
+            contentFit="contain"
+          />
+          <View style={styles.bubble}>
+            <Text style={styles.bubbleText}>{question.prompt}</Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.options}>
-        {question.options.map((option) => {
-          const isSelected = selectedLetter === option.letter;
-          const isRevealed = selectedLetter !== null;
-          const isCorrectOption = isRevealed && option.correct;
-          const isWrongSelected = isSelected && !option.correct;
+        <View style={styles.options}>
+          {question.options.map((option) => {
+            const isSelected = selectedLetter === option.letter;
+            const isRevealed = selectedLetter !== null;
+            const isCorrectOption = isRevealed && option.correct;
+            const isWrongSelected = isSelected && !option.correct;
 
-          return (
-            <TouchableOpacity
-              key={option.letter}
-              style={[
-                styles.optionRow,
-                isCorrectOption && styles.optionCorrect,
-                isWrongSelected && styles.optionWrong,
-              ]}
-              disabled={isRevealed}
-              onPress={() => handleSelect(option)}>
-              <View
+            return (
+              <TouchableOpacity
+                key={option.letter}
                 style={[
-                  styles.optionLetter,
-                  isCorrectOption && styles.optionLetterCorrect,
-                  isWrongSelected && styles.optionLetterWrong,
-                ]}>
-                <Text
+                  styles.optionRow,
+                  isCorrectOption && styles.optionCorrect,
+                  isWrongSelected && styles.optionWrong,
+                ]}
+                disabled={isRevealed}
+                onPress={() => handleSelect(option)}>
+                <View
                   style={[
-                    styles.optionLetterText,
-                    (isCorrectOption || isWrongSelected) && styles.optionLetterTextActive,
+                    styles.optionLetter,
+                    isCorrectOption && styles.optionLetterCorrect,
+                    isWrongSelected && styles.optionLetterWrong,
                   ]}>
-                  {option.letter}
-                </Text>
-              </View>
-              <Text style={styles.optionText}>{option.text}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+                  <Text
+                    style={[
+                      styles.optionLetterText,
+                      (isCorrectOption || isWrongSelected) && styles.optionLetterTextActive,
+                    ]}>
+                    {option.letter}
+                  </Text>
+                </View>
+                <Text style={styles.optionText}>{option.text}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {selectedLetter && (
+          <View style={styles.explanationCard}>
+            <Text style={styles.explanationLabel}>Explication</Text>
+            <Text style={styles.explanationText}>{question.explanation}</Text>
+          </View>
+        )}
+      </ScrollView>
 
       <TouchableOpacity
         style={[styles.continueButton, !selectedLetter && styles.continueButtonDisabled]}
@@ -254,6 +275,9 @@ const styles = StyleSheet.create({
     color: "#FF4B6E",
     fontWeight: "700",
     fontSize: 16,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   category: {
     color: "#60646C",
@@ -328,9 +352,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#000000",
+    flex: 1,
+  },
+  explanationCard: {
+    marginTop: 16,
+    backgroundColor: "#EFF3FF",
+    borderRadius: 16,
+    padding: 16,
+  },
+  explanationLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#3A5AE8",
+    marginBottom: 4,
+  },
+  explanationText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#3C3C43",
   },
   continueButton: {
-    marginTop: "auto",
     marginBottom: 24,
     backgroundColor: "#A8EA73",
     borderRadius: 16,
