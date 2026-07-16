@@ -1,16 +1,21 @@
+import { Category } from "@/constants/categories";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Lock, PiggyBank, Wallet } from "lucide-react-native";
+import { Lock, Wallet } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export function LessonPath() {
+export function LessonPath({ category }: { category: Category }) {
   const router = useRouter();
+
+  // Determine accent color from border color or default
+  const accentColor = category.borderColor || "#8B5CF6";
+  const mainColor = category.color || "#8B5CF6";
 
   return (
     <>
-      <View style={styles.unitCard}>
+      <View style={[styles.unitCard, { backgroundColor: mainColor }]}>
         <Text style={styles.unitTitle}>Unité 1</Text>
-        <Text style={styles.unitSubtitle}>Maîtriser ses finances</Text>
+        <Text style={[styles.unitSubtitle, { color: accentColor }]}>{category.subtitle}</Text>
       </View>
 
       <View style={styles.timeline}>
@@ -18,27 +23,27 @@ export function LessonPath() {
 
         {/* Step completed */}
         <View style={styles.stepContainer}>
-          <View style={styles.completedStep}>
-            <Text style={styles.check}>✓</Text>
+          <View style={[styles.completedStep, { backgroundColor: accentColor, borderColor: mainColor }]}>
+            <Text style={[styles.check, { color: mainColor }]}>✓</Text>
           </View>
         </View>
 
         <View style={styles.stepContainer}>
-          <View style={styles.completedStep}>
-            <Text style={styles.check}>✓</Text>
+          <View style={[styles.completedStep, { backgroundColor: accentColor, borderColor: mainColor }]}>
+            <Text style={[styles.check, { color: mainColor }]}>✓</Text>
           </View>
         </View>
 
         {/* START */}
         <View style={styles.startContainer}>
           <View style={styles.startBadge}>
-            <Text style={styles.startText}>START</Text>
+            <Text style={[styles.startText, { color: accentColor }]}>START</Text>
           </View>
 
           <TouchableOpacity
-            style={styles.mainStep}
+            style={[styles.mainStep, { backgroundColor: category.color, borderColor: accentColor }]}
             onPress={() => router.push("/lesson-content")}>
-            <PiggyBank color="#4B1D9A" size={42} />
+            <category.icon color="#FFFFFF" size={42} />
           </TouchableOpacity>
         </View>
 
@@ -46,12 +51,12 @@ export function LessonPath() {
         <View style={styles.speechWrapper}>
           <View style={styles.bubble}>
             <Text style={styles.bubbleText}>
-              Gère ton budget{"\n"}comme un pro !
+              Lance-toi dans les {"\n"}défis {category.label} !
             </Text>
           </View>
 
           <Image
-            source={require("@/images/RicoHappy.svg")}
+            source={category.mascot}
             style={styles.mascot}
             contentFit="contain"
           />

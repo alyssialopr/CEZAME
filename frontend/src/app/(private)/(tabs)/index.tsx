@@ -4,24 +4,30 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
+import { LessonPath } from "@/components/lesson-path";
+import { useProgress } from "@/hooks/useProgress";
+import { useActiveCategory } from "@/providers/CategoryProvider";
+import { Image } from "expo-image";
 import {
   Flame,
   Gem,
   Home,
   Landmark,
+  Lock,
   Settings,
   Trophy,
 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LessonPath } from "@/components/lesson-path";
-import { useProgress } from "@/hooks/useProgress";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { data: progress } = useProgress();
+  const { activeCategory, isInitialized } = useActiveCategory();
+
+  if (!isInitialized) return null; // or a loader
 
   return (
     <SafeAreaView style={styles.container}>
@@ -40,7 +46,6 @@ export default function HomeScreen() {
             <Text style={styles.orange}>{progress?.streak || 0}</Text>
           </View>
 
-
           <View style={styles.stat}>
             <Gem size={18} color="#29B6F6" />
             <Text style={styles.blue}>500</Text>
@@ -49,7 +54,17 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView>
-        <LessonPath />
+        {activeCategory.id === "finance" ? (
+          <LessonPath category={activeCategory} />
+        ) : (
+          <View style={styles.comingSoon}>
+            <Image source={activeCategory.mascot} style={styles.mascot} contentFit="contain" />
+            <View style={styles.lockedBadge}>
+              <Lock size={28} color="#AFAFB8" />
+            </View>
+            <Text style={styles.comingSoonText}>Cette catégorie arrive bientôt !</Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* BOTTOM NAV */}
@@ -143,5 +158,31 @@ const styles = StyleSheet.create({
   nav: {
     color: "#8A8A99",
     marginTop: 4,
+  },
+  comingSoon: {
+    alignItems: "center",
+    gap: 16,
+    paddingVertical: 80,
+    paddingHorizontal: 40,
+  },
+  mascot: {
+    width: 96,
+    height: 96,
+  },
+  lockedBadge: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    backgroundColor: "#ECEAF1",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 4,
+    borderColor: "#D4D0DB",
+  },
+  comingSoonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#60646C",
+    textAlign: "center",
   },
 });

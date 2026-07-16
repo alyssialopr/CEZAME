@@ -1,11 +1,13 @@
 import { submitOnboardingAnswers } from '@/lib/onboarding';
 import { useAuth } from '@/providers/AuthProvider';
+import { useActiveCategory } from '@/providers/CategoryProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInRight, FadeOutLeft, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeInRight, FadeOutLeft, LinearTransition, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 const STEPS = [
   {
@@ -65,6 +67,7 @@ export default function OnboardingScreen() {
   const queryClient = useQueryClient();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const [answers, setAnswers] = useState<any>({
     social_security: { ameli_account_created: false, vitale_card_requested: false, has_mutuelle: false },
@@ -113,14 +116,87 @@ export default function OnboardingScreen() {
       });
 
       queryClient.invalidateQueries({ queryKey: ['userProfile', session.user.id] });
-      router.replace('/(private)/(tabs)');
+      setIsCompleted(true);
     } catch (err) {
       console.error(err);
-      // In a real app we'd show a toast here
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const { setActiveCategoryId } = useActiveCategory();
+
+  const { score, rank, weakCategoryTitles, weakCategoryIds } = useMemo(() => {
+    let totalScore = 0;
+    const categoryScores: { id: string; title: string; score: number }[] = [];
+
+    STEPS.forEach(s => {
+      let catScore = 0;
+      s.questions.forEach(q => {
+        if (answers[s.id][q.key]) {
+          catScore++;
+          totalScore++;
+        }
+      });
+      categoryScores.push({ id: s.id, title: s.title, score: catScore });
+    });
+
+    let calculatedRank = 'Apprenti Adulte (Encore beaucoup à découvrir)';
+    if (totalScore > 5 && totalScore <= 10) calculatedRank = 'Adulte en Devenir (Sur la bonne voie)';
+    if (totalScore > 10) calculatedRank = 'Expert du Quotidien (Prêt à affronter la vie)';
+
+    // Find categories with the lowest scores (weakest)
+    categoryScores.sort((a, b) => a.score - b.score);
+    const weakestTitles = categoryScores.slice(0, 2).map(c => c.title);
+    const weakestIds = categoryScores.slice(0, 2).map(c => c.id);
+
+    return { score: totalScore, rank: calculatedRank, weakCategoryTitles: weakestTitles, weakCategoryIds: weakestIds };
+  }, [answers]);
+
+  const finishAndGoHome = async () => {
+    if (weakCategoryIds.length > 0) {
+      await setActiveCategoryId(weakCategoryIds[0]);
+    }
+    router.replace('/(private)/(tabs)');
+  };
+
+  if (isCompleted) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ConfettiCannon count={100} origin={{x: -10, y: 0}} fallSpeed={2500} fadeOut={true} />
+        <View style={[styles.container, styles.resultsContainer]}>
+          <Animated.View entering={ZoomIn.duration(600)} style={styles.resultsContent}>
+            <Text style={styles.resultsHeader}>🎉 Bilan de Départ 🎉</Text>
+            
+            <View style={styles.scoreCircle}>
+              <Text style={styles.scoreText}>{score}/15</Text>
+            </View>
+            
+            <Text style={styles.rankText}>{rank}</Text>
+            
+            <View style={styles.recommendationBox}>
+              <Text style={styles.recommendationTitle}>Recommandations :</Text>
+              <Text style={styles.recommendationText}>
+                On te conseille de commencer par les ateliers liés à :
+              </Text>
+              {weakCategoryTitles.map((cat, idx) => (
+                <Text key={idx} style={styles.weakCategoryBullet}>• {cat}</Text>
+              ))}
+            </View>
+          </Animated.View>
+
+          <View style={styles.footer}>
+            <TouchableOpacity 
+              style={[styles.btnPrimary, { width: '100%' }]} 
+              onPress={finishAndGoHome}
+            >
+              <Text style={styles.btnPrimaryText}>C'est parti !</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -202,6 +278,80 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
+  },
+  resultsContainer: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  resultsContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  resultsHeader: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 32,
+    textAlign: 'center',
+  },
+  scoreCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#A8EA73',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#A8EA73',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  scoreText: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: '#1A1A1A',
+  },
+  rankText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 48,
+    paddingHorizontal: 16,
+  },
+  recommendationBox: {
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    borderRadius: 20,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  recommendationTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 12,
+  },
+  recommendationText: {
+    fontSize: 15,
+    color: '#666',
+    marginBottom: 12,
+    lineHeight: 22,
+  },
+  weakCategoryBullet: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    paddingLeft: 8,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -292,6 +442,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 16,
+    width: '100%',
   },
   btnSecondary: {
     paddingVertical: 16,

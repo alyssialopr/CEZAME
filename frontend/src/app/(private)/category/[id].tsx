@@ -34,7 +34,7 @@ export default function CategoryScreen() {
 
       <ScrollView>
         {category.id === "finance" ? (
-          <LessonPath />
+          <LessonPath category={category} />
         ) : (
           <View style={styles.comingSoon}>
             <Image source={category.mascot} style={styles.mascot} contentFit="contain" />

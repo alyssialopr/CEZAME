@@ -1,11 +1,12 @@
-import { Car, Heart, Home, Landmark, PiggyBank } from "lucide-react-native";
+import { Car, Home, Euro, FileText, Plus } from "lucide-react-native";
 
 export type Category = {
   id: string;
   label: string;
   subtitle: string;
   color: string;
-  icon: typeof Heart;
+  borderColor?: string;
+  icon: typeof Home;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mascot: any;
 };
@@ -15,31 +16,35 @@ export const CATEGORIES: Category[] = [
     id: "sante",
     label: "Santé",
     subtitle: "Prendre soin de toi",
-    color: "#A8EA73",
-    icon: Heart,
+    color: "#B4EE83", // Adjusted to match mockup
+    borderColor: "#91C85A",
+    icon: Plus,
     mascot: require("@/images/RicoDocteur.svg"),
   },
   {
     id: "finance",
     label: "Finance",
     subtitle: "Maîtriser ses finances",
-    color: "#FBE7A1",
-    icon: PiggyBank,
+    color: "#FDE694",
+    borderColor: "#DBBA3E",
+    icon: Euro,
     mascot: require("@/images/RicoEntrepriseDroit.svg"),
   },
   {
     id: "administration",
     label: "Administration",
     subtitle: "Simplifier tes démarches",
-    color: "#8C9EFF",
-    icon: Landmark,
+    color: "#8FA6FF",
+    borderColor: "#607FE8",
+    icon: FileText,
     mascot: require("@/images/RicoEntreprise.svg"),
   },
   {
     id: "voiture",
     label: "Voiture",
     subtitle: "Rouler sereinement",
-    color: "#9B6CFF",
+    color: "#AC84FF",
+    borderColor: "#8854E8",
     icon: Car,
     mascot: require("@/images/RicoBleuTravail.svg"),
   },
@@ -47,7 +52,8 @@ export const CATEGORIES: Category[] = [
     id: "logement",
     label: "Logement",
     subtitle: "Trouver ton toit",
-    color: "#FFAB4A",
+    color: "#FFB55F",
+    borderColor: "#E88D23",
     icon: Home,
     mascot: require("@/images/Riconstruction.svg"),
   },
