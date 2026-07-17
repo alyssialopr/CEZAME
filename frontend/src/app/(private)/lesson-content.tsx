@@ -1,51 +1,33 @@
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { Heart, X } from "lucide-react-native";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CATEGORIES } from "@/constants/categories";
 import { LESSON_STEPS } from "@/constants/lesson";
-
-const LESSON_TITLE = "Gérer ton argent au quotidien";
-
-type LessonScreen = {
-  title: string;
-  body: string;
-  tip?: string;
-};
-
-const SCREENS: LessonScreen[] = [
-  {
-    title: "Ton compte au quotidien",
-    body: "Ton compte courant sert à recevoir de l'argent et payer tes dépenses. Le RIB est sa « carte d'identité » : tu le donnes pour recevoir un virement (salaire, CAF) ou autoriser un prélèvement (abonnement, loyer). Un prélèvement peut toujours être annulé depuis ta banque.",
-  },
-  {
-    title: "Le découvert et les agios",
-    body: "Être à découvert = avoir un solde négatif. Si ta banque l'autorise, ce n'est pas gratuit : elle prélève des agios (des frais). Sans autorisation, les frais explosent et des paiements peuvent être rejetés. Le découvert n'est pas de l'argent en plus, c'est une dette.",
-    tip: "Bon réflexe : active les notifications de solde de ton appli bancaire — tu vois le découvert arriver.",
-  },
-  {
-    title: "Épargner, même un peu",
-    body: "Le Livret A est l'épargne de base : sans risque, sans frais, et l'argent reste disponible à tout moment. Une méthode simple pour ton budget : la règle 50/30/20 — environ 50 % pour les besoins (loyer, courses), 30 % pour les envies, 20 % pour l'épargne.",
-  },
-  {
-    title: "Les réflexes qui sauvent",
-    body: "Carte perdue ou volée : fais opposition immédiatement depuis l'appli ou par téléphone — chaque minute compte. Avant de choisir une banque, compare les frais réels : cotisation de carte, tenue de compte, frais à l'étranger. Ils varient beaucoup d'une banque à l'autre.",
-  },
-];
+import { LESSONS } from "@/constants/lessons";
 
 export default function LessonContentScreen() {
   const router = useRouter();
+  const { category: categoryId } = useLocalSearchParams<{ category: string }>();
   const [screenIndex, setScreenIndex] = useState(0);
 
-  const screen = SCREENS[screenIndex];
-  const isLastScreen = screenIndex === SCREENS.length - 1;
+  const lesson = LESSONS[categoryId];
+  const category = CATEGORIES.find((item) => item.id === categoryId);
+
+  if (!lesson || !category) {
+    return <Redirect href="/categories" />;
+  }
+
+  const screen = lesson.screens[screenIndex];
+  const isLastScreen = screenIndex === lesson.screens.length - 1;
   const progress = (screenIndex + 1) / LESSON_STEPS;
 
   function handleContinue() {
     if (isLastScreen) {
-      router.push("/lesson");
+      router.push({ pathname: "/lesson", params: { category: categoryId } });
       return;
     }
     setScreenIndex((i) => i + 1);
@@ -69,14 +51,10 @@ export default function LessonContentScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>{LESSON_TITLE}</Text>
+        <Text style={styles.title}>{lesson.title}</Text>
 
         <View style={styles.speechWrapper}>
-          <Image
-            source={require("@/images/RicoHappy.svg")}
-            style={styles.mascot}
-            contentFit="contain"
-          />
+          <Image source={category.mascot} style={styles.mascot} contentFit="contain" />
           <View style={styles.bubble}>
             <Text style={styles.bubbleText}>{screen.title}</Text>
           </View>

@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LessonPath } from "@/components/lesson-path";
 import { CATEGORIES } from "@/constants/categories";
+import { LESSONS } from "@/constants/lessons";
 
 export default function CategoryScreen() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export default function CategoryScreen() {
       </View>
 
       <ScrollView>
-        {category.id === "finance" ? (
+        {LESSONS[category.id] ? (
           <LessonPath category={category} />
         ) : (
           <View style={styles.comingSoon}>

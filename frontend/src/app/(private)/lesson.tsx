@@ -1,113 +1,18 @@
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { Heart, X } from "lucide-react-native";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CATEGORIES } from "@/constants/categories";
 import { LESSON_CONTENT_SCREENS, LESSON_STEPS } from "@/constants/lesson";
+import { LESSONS, LessonOption } from "@/constants/lessons";
 import { useProgress, useUpdateStreak } from "@/hooks/useProgress";
-
-type Option = {
-  letter: "A" | "B" | "C";
-  text: string;
-  correct?: boolean;
-};
-
-type Question = {
-  category: string;
-  prompt: string;
-  options: Option[];
-  explanation: string;
-};
-
-const QUESTIONS: Question[] = [
-  {
-    category: "Le découvert et les agios",
-    prompt: "Le découvert autorisé, c'est :",
-    options: [
-      { letter: "A", text: "Un solde négatif toléré, mais avec des frais", correct: true },
-      { letter: "B", text: "De l'argent gratuit prêté par la banque" },
-      { letter: "C", text: "Interdit avant 25 ans" },
-    ],
-    explanation: "La banque tolère le négatif mais facture des agios. C'est une dette, pas un bonus.",
-  },
-  {
-    category: "Ton compte au quotidien",
-    prompt: "On te demande ton RIB. C'est pour :",
-    options: [
-      { letter: "A", text: "Recevoir un virement ou mettre en place un prélèvement", correct: true },
-      { letter: "B", text: "Payer en magasin" },
-      { letter: "C", text: "Prouver ton identité" },
-    ],
-    explanation: "Le RIB identifie ton compte — indispensable pour le salaire, la CAF ou un abonnement.",
-  },
-  {
-    category: "Le découvert et les agios",
-    prompt: "Les agios, c'est :",
-    options: [
-      { letter: "A", text: "Des frais quand ton compte est à découvert", correct: true },
-      { letter: "B", text: "Des intérêts que la banque te verse" },
-      { letter: "C", text: "Une prime de bienvenue" },
-    ],
-    explanation: "Plus tu restes à découvert longtemps, plus les agios s'accumulent.",
-  },
-  {
-    category: "Les réflexes qui sauvent",
-    prompt: "Tu perds ta carte bancaire. Tu fais quoi en premier ?",
-    options: [
-      { letter: "A", text: "Opposition immédiate (appli ou téléphone)", correct: true },
-      { letter: "B", text: "Tu attends de voir si quelqu'un l'utilise" },
-      { letter: "C", text: "Tu changes de banque" },
-    ],
-    explanation:
-      "L'opposition bloque la carte instantanément. Attendre, c'est risquer de payer les achats d'un voleur.",
-  },
-  {
-    category: "Épargner, même un peu",
-    prompt: "Le Livret A, c'est :",
-    options: [
-      { letter: "A", text: "Une épargne disponible à tout moment, sans risque", correct: true },
-      { letter: "B", text: "Un compte bloqué pendant 5 ans" },
-      { letter: "C", text: "Un placement réservé aux mineurs" },
-    ],
-    explanation: "Tu peux retirer quand tu veux, sans frais. C'est la première brique d'épargne idéale.",
-  },
-  {
-    category: "Ton compte au quotidien",
-    prompt: "Un prélèvement automatique, c'est :",
-    options: [
-      { letter: "A", text: "Une autorisation donnée à un organisme de prélever ton compte", correct: true },
-      { letter: "B", text: "Impossible à annuler une fois activé" },
-      { letter: "C", text: "Réservé au paiement des impôts" },
-    ],
-    explanation:
-      "Tu peux le révoquer à tout moment depuis ta banque, par exemple pour stopper un abonnement.",
-  },
-  {
-    category: "Les réflexes qui sauvent",
-    prompt: "Les frais bancaires (carte, tenue de compte) :",
-    options: [
-      { letter: "A", text: "Varient selon les banques, il faut comparer", correct: true },
-      { letter: "B", text: "Sont fixés par l'État, identiques partout" },
-      { letter: "C", text: "Sont interdits par la loi" },
-    ],
-    explanation: "D'une banque à l'autre, la même carte peut coûter 0 € ou plus de 100 € par an.",
-  },
-  {
-    category: "Épargner, même un peu",
-    prompt: "La règle 50/30/20 pour gérer son budget, c'est :",
-    options: [
-      { letter: "A", text: "Besoins / envies / épargne", correct: true },
-      { letter: "B", text: "Loyer / courses / sorties" },
-      { letter: "C", text: "Un taux d'intérêt bancaire" },
-    ],
-    explanation: "50 % besoins, 30 % envies, 20 % épargne — un repère simple, à adapter à ta situation.",
-  },
-];
 
 export default function LessonScreen() {
   const router = useRouter();
+  const { category: categoryId } = useLocalSearchParams<{ category: string }>();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [hearts, setHearts] = useState(5);
@@ -116,12 +21,20 @@ export default function LessonScreen() {
   const { data: progressData } = useProgress();
   const updateStreak = useUpdateStreak();
 
-  const question = QUESTIONS[questionIndex];
-  const isLastQuestion = questionIndex === QUESTIONS.length - 1;
+  const lesson = LESSONS[categoryId];
+  const category = CATEGORIES.find((item) => item.id === categoryId);
+
+  if (!lesson || !category) {
+    return <Redirect href="/categories" />;
+  }
+
+  const questions = lesson.questions;
+  const question = questions[questionIndex];
+  const isLastQuestion = questionIndex === questions.length - 1;
   const progress =
     (LESSON_CONTENT_SCREENS + questionIndex + (selectedLetter ? 1 : 0)) / LESSON_STEPS;
 
-  function handleSelect(option: Option) {
+  function handleSelect(option: LessonOption) {
     if (selectedLetter) return;
     setSelectedLetter(option.letter);
     if (option.correct) {
@@ -146,7 +59,7 @@ export default function LessonScreen() {
         pathname: '/score',
         params: {
           correct: String(correctCount),
-          total: String(QUESTIONS.length),
+          total: String(questions.length),
           hearts: String(hearts),
         },
       });
@@ -177,11 +90,7 @@ export default function LessonScreen() {
         <Text style={styles.category}>{question.category}</Text>
 
         <View style={styles.speechWrapper}>
-          <Image
-            source={require("@/images/RicoHappy.svg")}
-            style={styles.mascot}
-            contentFit="contain"
-          />
+          <Image source={category.mascot} style={styles.mascot} contentFit="contain" />
           <View style={styles.bubble}>
             <Text style={styles.bubbleText}>{question.prompt}</Text>
           </View>

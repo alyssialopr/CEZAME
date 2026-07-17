@@ -9,6 +9,7 @@ import {
 
 import { LessonPath } from "@/components/lesson-path";
 import { useProgress } from "@/hooks/useProgress";
+import { LESSONS } from "@/constants/lessons";
 import { useActiveCategory } from "@/providers/CategoryProvider";
 import { Image } from "expo-image";
 import {
@@ -54,7 +55,7 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView>
-        {activeCategory.id === "finance" ? (
+        {LESSONS[activeCategory.id] ? (
           <LessonPath category={activeCategory} />
         ) : (
           <View style={styles.comingSoon}>

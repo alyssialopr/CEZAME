@@ -42,7 +42,9 @@ export function LessonPath({ category }: { category: Category }) {
 
           <TouchableOpacity
             style={[styles.mainStep, { backgroundColor: category.color, borderColor: accentColor }]}
-            onPress={() => router.push("/lesson-content")}>
+            onPress={() =>
+              router.push({ pathname: "/lesson-content", params: { category: category.id } })
+            }>
             <category.icon color="#FFFFFF" size={42} />
           </TouchableOpacity>
         </View>
