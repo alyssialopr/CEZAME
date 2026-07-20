@@ -1,18 +1,25 @@
 import { Image } from "expo-image";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { Heart, X } from "lucide-react-native";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
 import { LESSON_STEPS } from "@/constants/lesson";
 import { LESSONS } from "@/constants/lessons";
+import { useTutorialTarget } from "@/hooks/useTutorialTarget";
+import { useTutorial } from "@/providers/TutorialProvider";
 
 export default function LessonContentScreen() {
   const router = useRouter();
   const { category: categoryId } = useLocalSearchParams<{ category: string }>();
   const [screenIndex, setScreenIndex] = useState(0);
+  const insets = useSafeAreaInsets();
+
+  const { pressTarget } = useTutorial();
+  const continueRef = useRef<View>(null);
+  useTutorialTarget("lesson-intro", continueRef);
 
   const lesson = LESSONS[categoryId];
   const category = CATEGORIES.find((item) => item.id === categoryId);
@@ -27,6 +34,8 @@ export default function LessonContentScreen() {
 
   function handleContinue() {
     if (isLastScreen) {
+      // Dernier écran de contenu : avance le tuto en même temps qu'on passe aux questions.
+      pressTarget("lesson-intro");
       router.push({ pathname: "/lesson", params: { category: categoryId } });
       return;
     }
@@ -34,7 +43,7 @@ export default function LessonContentScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <X color="#AFAFB8" size={26} />
@@ -71,10 +80,13 @@ export default function LessonContentScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+      <TouchableOpacity
+        ref={continueRef}
+        style={[styles.continueButton, { marginBottom: insets.bottom + 12 }]}
+        onPress={handleContinue}>
         <Text style={styles.continueText}>CONTINUER</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 

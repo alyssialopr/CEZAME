@@ -14,7 +14,7 @@ export default function PublicLayout() {
   }
 
   if (session) {
-    return <Redirect href={"/(private)/(tabs)" as RelativePathString} />;
+    return <Redirect href={"/(private)/categories" as RelativePathString} />;
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;

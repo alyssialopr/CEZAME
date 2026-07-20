@@ -1,14 +1,17 @@
 import { Image } from "expo-image";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { Heart, X } from "lucide-react-native";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
+import { TutorialOverlay } from "@/components/tutorial-overlay";
 import { LESSON_CONTENT_SCREENS, LESSON_STEPS } from "@/constants/lesson";
 import { LESSONS, LessonOption } from "@/constants/lessons";
 import { useProgress, useUpdateStreak } from "@/hooks/useProgress";
+import { useTutorialTarget } from "@/hooks/useTutorialTarget";
+import { useTutorial } from "@/providers/TutorialProvider";
 
 export default function LessonScreen() {
   const router = useRouter();
@@ -20,6 +23,11 @@ export default function LessonScreen() {
 
   const { data: progressData } = useProgress();
   const updateStreak = useUpdateStreak();
+  const insets = useSafeAreaInsets();
+
+  const { pressTarget } = useTutorial();
+  const optionsRef = useRef<View>(null);
+  useTutorialTarget("lesson-question", optionsRef);
 
   const lesson = LESSONS[categoryId];
   const category = CATEGORIES.find((item) => item.id === categoryId);
@@ -36,6 +44,8 @@ export default function LessonScreen() {
 
   function handleSelect(option: LessonOption) {
     if (selectedLetter) return;
+    // Répondre à une question termine le tuto (dernière étape).
+    pressTarget("lesson-question");
     setSelectedLetter(option.letter);
     if (option.correct) {
       setCorrectCount((c) => c + 1);
@@ -70,7 +80,7 @@ export default function LessonScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <X color="#AFAFB8" size={26} />
@@ -96,7 +106,7 @@ export default function LessonScreen() {
           </View>
         </View>
 
-        <View style={styles.options}>
+        <View ref={optionsRef} style={styles.options}>
           {question.options.map((option) => {
             const isSelected = selectedLetter === option.letter;
             const isRevealed = selectedLetter !== null;
@@ -142,12 +152,20 @@ export default function LessonScreen() {
       </ScrollView>
 
       <TouchableOpacity
-        style={[styles.continueButton, !selectedLetter && styles.continueButtonDisabled]}
+        style={[
+          styles.continueButton,
+          { marginBottom: insets.bottom + 12 },
+          !selectedLetter && styles.continueButtonDisabled,
+        ]}
         disabled={!selectedLetter}
         onPress={handleContinue}>
         <Text style={styles.continueText}>CONTINUER</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+
+      {/* L'écran leçon est un fullScreenModal : l'overlay racine peut passer
+          derrière le modal sur iOS, on le rend donc aussi ici. */}
+      <TutorialOverlay />
+    </View>
   );
 }
 

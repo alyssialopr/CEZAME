@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useEffect, useRef } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -9,24 +10,37 @@ import {
 
 import { LessonPath } from "@/components/lesson-path";
 import { useProgress } from "@/hooks/useProgress";
+import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { LESSONS } from "@/constants/lessons";
 import { useActiveCategory } from "@/providers/CategoryProvider";
+import { useTutorial } from "@/providers/TutorialProvider";
 import { Image } from "expo-image";
-import {
-  Flame,
-  Gem,
-  Home,
-  Landmark,
-  Lock,
-  Settings,
-  Trophy,
-} from "lucide-react-native";
+import { Flame, Gem, Landmark, Lock } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { data: progress } = useProgress();
   const { activeCategory, isInitialized } = useActiveCategory();
+
+  const {
+    pending: tutorialPending,
+    isActive: tutorialActive,
+    start: startTutorial,
+    pressTarget,
+  } = useTutorial();
+  const logoRef = useRef<View>(null);
+  const lessonNodeRef = useRef<View>(null);
+  useTutorialTarget("home-logo", logoRef);
+  useTutorialTarget("lesson-node", lessonNodeRef);
+
+  // Démarre le tuto au 1er passage sur le home après une demande explicite
+  // (fin d'onboarding ou « Revoir le tutoriel »).
+  useEffect(() => {
+    if (tutorialPending && !tutorialActive) {
+      startTutorial();
+    }
+  }, [tutorialPending, tutorialActive, startTutorial]);
 
   if (!isInitialized) return null; // or a loader
 
@@ -35,8 +49,13 @@ export default function HomeScreen() {
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
+          ref={logoRef}
           style={styles.logoContainer}
-          onPress={() => router.push("/categories")}>
+          onPress={() => {
+            // Pendant le tuto, taper le logo fait avancer sans quitter le home.
+            if (pressTarget("home-logo")) return;
+            router.push("/categories");
+          }}>
           <Landmark color="#8B5CF6" size={20} />
           <Text style={styles.logo}>CEZAME</Text>
         </TouchableOpacity>
@@ -56,7 +75,7 @@ export default function HomeScreen() {
 
       <ScrollView>
         {LESSONS[activeCategory.id] ? (
-          <LessonPath category={activeCategory} />
+          <LessonPath category={activeCategory} nodeRef={lessonNodeRef} />
         ) : (
           <View style={styles.comingSoon}>
             <Image source={activeCategory.mascot} style={styles.mascot} contentFit="contain" />
@@ -67,24 +86,6 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
-
-      {/* BOTTOM NAV */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.navItem}>
-          <Home color="#7C4DFF" size={24} />
-          <Text style={styles.activeNav}>HOME</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Trophy color="#8A8A99" size={24} />
-          <Text style={styles.nav}>PROFILE</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Settings color="#8A8A99" size={24} />
-          <Text style={styles.nav}>SETTINGS</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -136,30 +137,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  bottomBar: {
-    height: 80,
-    borderTopWidth: 1,
-    borderColor: "#E2E2E2",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    backgroundColor: "white",
-  },
-
-  navItem: {
-    alignItems: "center",
-  },
-
-  activeNav: {
-    color: "#7C4DFF",
-    fontWeight: "700",
-    marginTop: 4,
-  },
-
-  nav: {
-    color: "#8A8A99",
-    marginTop: 4,
-  },
   comingSoon: {
     alignItems: "center",
     gap: 16,

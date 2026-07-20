@@ -3,9 +3,11 @@ import { Stack } from 'expo-router';
 import { StatusBar, useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { TutorialOverlay } from '@/components/tutorial-overlay';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { CategoryProvider } from '@/providers/CategoryProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
+import { TutorialProvider } from '@/providers/TutorialProvider';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function RootLayout() {
@@ -17,12 +19,15 @@ export default function RootLayout() {
         <QueryProvider>
           <CategoryProvider>
             <AuthProvider>
-              <AnimatedSplashOverlay />
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(private)" options={{ headerShown: false }} />
-                <Stack.Screen name="(public)" options={{ headerShown: false }} />
-                <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-              </Stack>
+              <TutorialProvider>
+                <AnimatedSplashOverlay />
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(private)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(public)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+                </Stack>
+                <TutorialOverlay />
+              </TutorialProvider>
             </AuthProvider>
           </CategoryProvider>
         </QueryProvider>

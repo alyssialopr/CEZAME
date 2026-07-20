@@ -1,21 +1,42 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Flame, Gem, Landmark } from "lucide-react-native";
+import { useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
+import { NavBar, NavKey } from "@/components/nav-bar";
 import { useProgress } from "@/hooks/useProgress";
+import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useActiveCategory } from "@/providers/CategoryProvider";
+import { useTutorial } from "@/providers/TutorialProvider";
 
 export default function CategoriesScreen() {
   const router = useRouter();
   const { data: progress } = useProgress();
   const { setActiveCategoryId } = useActiveCategory();
 
+  const { pending, isActive, start, pressTarget } = useTutorial();
+  const firstCardRef = useRef<View>(null);
+  useTutorialTarget("category-card", firstCardRef);
+
+  // Le tuto démarre ICI (1er écran après le bilan d'onboarding).
+  useEffect(() => {
+    if (pending && !isActive) start();
+  }, [pending, isActive, start]);
+
   const handleCategorySelect = async (id: string) => {
+    // Choisir un thème fait avancer le tuto (étape "category-card") et va au home.
+    pressTarget("category-card");
     await setActiveCategoryId(id);
     router.replace('/(private)/(tabs)');
+  };
+
+  const handleNavigate = (key: NavKey) => {
+    if (key === "profile") router.replace("/(private)/(tabs)/profile");
+    else if (key === "settings") router.replace("/(private)/(tabs)/settings");
+    else router.replace("/(private)/(tabs)");
   };
 
   return (
@@ -40,9 +61,10 @@ export default function CategoriesScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {CATEGORIES.map(({ id, label, subtitle, color, borderColor, icon: Icon, mascot }) => (
+        {CATEGORIES.map(({ id, label, subtitle, color, borderColor, icon: Icon, mascot }, index) => (
           <TouchableOpacity
             key={id}
+            ref={index === 0 ? firstCardRef : undefined}
             style={[styles.card, { backgroundColor: color, borderColor: borderColor || color }]}
             onPress={() => handleCategorySelect(id)}>
             <Icon color={borderColor} size={120} style={styles.cardWatermark} strokeWidth={3} />
@@ -56,6 +78,8 @@ export default function CategoriesScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <NavBar activeKey={null} onPress={handleNavigate} />
     </SafeAreaView>
   );
 }

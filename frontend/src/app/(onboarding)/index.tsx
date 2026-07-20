@@ -1,6 +1,6 @@
 import { submitOnboardingAnswers } from '@/lib/onboarding';
 import { useAuth } from '@/providers/AuthProvider';
-import { useActiveCategory } from '@/providers/CategoryProvider';
+import { useTutorial } from '@/providers/TutorialProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import React, { useState, useMemo } from 'react';
@@ -65,6 +65,7 @@ const STEPS = [
 export default function OnboardingScreen() {
   const { session } = useAuth();
   const queryClient = useQueryClient();
+  const { requestTutorial } = useTutorial();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -116,6 +117,8 @@ export default function OnboardingScreen() {
       });
 
       queryClient.invalidateQueries({ queryKey: ['userProfile', session.user.id] });
+      // Demande le tuto dès la fin de l'onboarding (démarrera sur le home).
+      requestTutorial();
       setIsCompleted(true);
     } catch (err) {
       console.error(err);
@@ -124,9 +127,7 @@ export default function OnboardingScreen() {
     }
   };
 
-  const { setActiveCategoryId } = useActiveCategory();
-
-  const { score, rank, weakCategoryTitles, weakCategoryIds } = useMemo(() => {
+  const { score, rank, weakCategoryTitles } = useMemo(() => {
     let totalScore = 0;
     const categoryScores: { id: string; title: string; score: number }[] = [];
 
@@ -153,11 +154,13 @@ export default function OnboardingScreen() {
     return { score: totalScore, rank: calculatedRank, weakCategoryTitles: weakestTitles, weakCategoryIds: weakestIds };
   }, [answers]);
 
-  const finishAndGoHome = async () => {
-    if (weakCategoryIds.length > 0) {
-      await setActiveCategoryId(weakCategoryIds[0]);
-    }
-    router.replace('/(private)/(tabs)');
+  const finishAndGoHome = () => {
+    // Demande le tuto (il démarrera au 1er passage sur le home), puis on envoie
+    // l'utilisateur choisir son thème sur la liste des catégories.
+    // (L'ancien setActiveCategoryId(weakCategoryIds[0]) était inopérant : les ids
+    // des STEPS ne correspondent pas aux ids de CATEGORIES → retombait sur finance.)
+    requestTutorial();
+    router.replace('/(private)/categories');
   };
 
   if (isCompleted) {

@@ -7,17 +7,21 @@ import {
   Heart,
   Landmark,
   Lock,
+  LogOut,
   Pencil,
   PiggyBank,
+  RotateCcw,
   Shield,
   UserRound,
   Zap,
 } from "lucide-react-native";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { supabase } from "@/lib/supabase";
 import { useProgress } from "@/hooks/useProgress";
 import { useAuth } from "@/providers/AuthProvider";
+import { useTutorial } from "@/providers/TutorialProvider";
 
 const BADGES = [
   { key: "premier-pas", label: "Premier Pas", icon: Footprints, color: "#9B6CFF", unlocked: true },
@@ -38,6 +42,25 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { data: progress } = useProgress();
+  const { requestTutorial } = useTutorial();
+
+  const handleLogout = () => {
+    Alert.alert("Déconnexion", "Veux-tu vraiment te déconnecter ?", [
+      { text: "Annuler", style: "cancel" },
+      {
+        text: "Se déconnecter",
+        style: "destructive",
+        onPress: () => {
+          supabase.auth.signOut();
+        },
+      },
+    ]);
+  };
+
+  const handleReplayTutorial = () => {
+    requestTutorial();
+    router.replace("/(private)/categories");
+  };
 
   const username = (user?.user_metadata?.username as string | undefined) || "Explorateur";
   const streak = progress?.streak ?? 0;
@@ -133,6 +156,16 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </View>
+
+        <TouchableOpacity style={styles.replayButton} onPress={handleReplayTutorial}>
+          <RotateCcw size={18} color="#7C4DFF" />
+          <Text style={styles.replayText}>Revoir le tutoriel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <LogOut size={18} color="#FF4B6E" />
+          <Text style={styles.logoutText}>Se déconnecter</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -327,5 +360,34 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 15,
     color: "#3C1D6B",
+  },
+  replayButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#EDE4FF",
+    borderRadius: 16,
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+  replayText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#7C4DFF",
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#FDEAEC",
+    borderRadius: 16,
+    paddingVertical: 14,
+  },
+  logoutText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FF4B6E",
   },
 });

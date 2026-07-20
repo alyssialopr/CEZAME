@@ -1,11 +1,20 @@
 import { Category } from "@/constants/categories";
+import { useTutorial } from "@/providers/TutorialProvider";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Lock, Wallet } from "lucide-react-native";
+import type { RefObject } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export function LessonPath({ category }: { category: Category }) {
+export function LessonPath({
+  category,
+  nodeRef,
+}: {
+  category: Category;
+  nodeRef?: RefObject<View | null>;
+}) {
   const router = useRouter();
+  const { pressTarget } = useTutorial();
 
   // Determine accent color from border color or default
   const accentColor = category.borderColor || "#8B5CF6";
@@ -41,10 +50,13 @@ export function LessonPath({ category }: { category: Category }) {
           </View>
 
           <TouchableOpacity
+            ref={nodeRef}
             style={[styles.mainStep, { backgroundColor: category.color, borderColor: accentColor }]}
-            onPress={() =>
-              router.push({ pathname: "/lesson-content", params: { category: category.id } })
-            }>
+            onPress={() => {
+              // Tap START : avance le tuto ET lance la leçon (flux réel).
+              pressTarget("lesson-node");
+              router.push({ pathname: "/lesson-content", params: { category: category.id } });
+            }}>
             <category.icon color="#FFFFFF" size={42} />
           </TouchableOpacity>
         </View>
