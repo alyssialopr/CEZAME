@@ -9,38 +9,52 @@ import { CATEGORIES } from "@/constants/categories";
 import { TutorialOverlay } from "@/components/tutorial-overlay";
 import { LESSON_CONTENT_SCREENS, LESSON_STEPS } from "@/constants/lesson";
 import { LESSONS, LessonOption } from "@/constants/lessons";
-import { useProgress, useUpdateStreak } from "@/hooks/useProgress";
+import { useProgress } from "@/hooks/useProgress";
+import { useCompleteLesson, useLessonDetails } from "@/hooks/useLessons";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useTutorial } from "@/providers/TutorialProvider";
 
 export default function LessonScreen() {
   const router = useRouter();
-  const { category: categoryId } = useLocalSearchParams<{ category: string }>();
+  const { category: categoryId, lessonId } = useLocalSearchParams<{
+    category: string;
+    lessonId?: string;
+  }>();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
   const [hearts, setHearts] = useState(5);
   const [correctCount, setCorrectCount] = useState(0);
 
-  const { data: progressData } = useProgress();
-  const updateStreak = useUpdateStreak();
+  const completeLessonMutation = useCompleteLesson();
   const insets = useSafeAreaInsets();
 
   const { pressTarget } = useTutorial();
   const optionsRef = useRef<View>(null);
   useTutorialTarget("lesson-question", optionsRef);
 
-  const lesson = LESSONS[categoryId];
+  const effectiveLessonId = lessonId || `${categoryId}_1`;
+  const { data: dbLesson } = useLessonDetails(effectiveLessonId, categoryId);
+  const localLesson = LESSONS[categoryId];
+  const lesson = dbLesson || (localLesson ? {
+    id: effectiveLessonId,
+    title: localLesson.title,
+    screens: localLesson.screens,
+    questions: localLesson.questions,
+  } : null);
+
   const category = CATEGORIES.find((item) => item.id === categoryId);
 
   if (!lesson || !category) {
     return <Redirect href="/categories" />;
   }
 
-  const questions = lesson.questions;
+  const questions = lesson.questions || [];
   const question = questions[questionIndex];
-  const isLastQuestion = questionIndex === questions.length - 1;
+  const isLastQuestion = questions.length === 0 || questionIndex === questions.length - 1;
+  const contentScreensCount = lesson.screens?.length || LESSON_CONTENT_SCREENS;
+  const totalSteps = contentScreensCount + (questions.length || 8);
   const progress =
-    (LESSON_CONTENT_SCREENS + questionIndex + (selectedLetter ? 1 : 0)) / LESSON_STEPS;
+    (contentScreensCount + questionIndex + (selectedLetter ? 1 : 0)) / totalSteps;
 
   function handleSelect(option: LessonOption) {
     if (selectedLetter) return;
@@ -57,12 +71,14 @@ export default function LessonScreen() {
   async function handleContinue() {
     if (!selectedLetter) return;
     if (isLastQuestion) {
-      if (progressData) {
-        try {
-          await updateStreak.mutateAsync(progressData);
-        } catch (e) {
-          console.error("Error updating streak", e);
-        }
+      try {
+        await completeLessonMutation.mutateAsync({
+          lessonId: effectiveLessonId,
+          categoryId,
+          score: correctCount,
+        });
+      } catch (e) {
+        console.error("Error updating lesson completion", e);
       }
 
       router.push({

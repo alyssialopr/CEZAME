@@ -9,6 +9,154 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      units: {
+        Row: {
+          id: string
+          category_id: string
+          unit_number: number
+          title: string
+          subtitle: string | null
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          category_id: string
+          unit_number: number
+          title: string
+          subtitle?: string | null
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          category_id?: string
+          unit_number?: number
+          title?: string
+          subtitle?: string | null
+          order_index?: number
+          created_at?: string
+        }
+      }
+      lessons: {
+        Row: {
+          id: string
+          unit_id: string | null
+          category_id: string
+          order_index: number
+          title: string
+          xp_reward: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          unit_id?: string | null
+          category_id: string
+          order_index: number
+          title: string
+          xp_reward?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          unit_id?: string | null
+          category_id?: string
+          order_index?: number
+          title?: string
+          xp_reward?: number
+          created_at?: string
+        }
+      }
+      lesson_screens: {
+        Row: {
+          id: string
+          lesson_id: string
+          order_index: number
+          title: string
+          body: string
+          tip: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          order_index: number
+          title: string
+          body: string
+          tip?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          order_index?: number
+          title?: string
+          body?: string
+          tip?: string | null
+          created_at?: string
+        }
+      }
+      lesson_questions: {
+        Row: {
+          id: string
+          lesson_id: string
+          order_index: number
+          category: string
+          prompt: string
+          options: Json
+          explanation: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          order_index: number
+          category: string
+          prompt: string
+          options: Json
+          explanation: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          order_index?: number
+          category?: string
+          prompt?: string
+          options?: Json
+          explanation?: string
+          created_at?: string
+        }
+      }
+      user_lesson_progress: {
+        Row: {
+          id: string
+          user_id: string
+          lesson_id: string
+          status: 'locked' | 'unlocked' | 'completed'
+          score: number
+          completed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lesson_id: string
+          status?: 'locked' | 'unlocked' | 'completed'
+          score?: number
+          completed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          lesson_id?: string
+          status?: 'locked' | 'unlocked' | 'completed'
+          score?: number
+          completed_at?: string | null
+          updated_at?: string
+        }
+      }
       users: {
         Row: {
           id: string

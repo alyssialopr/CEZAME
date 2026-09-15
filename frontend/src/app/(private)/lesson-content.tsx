@@ -8,12 +8,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CATEGORIES } from "@/constants/categories";
 import { LESSON_STEPS } from "@/constants/lesson";
 import { LESSONS } from "@/constants/lessons";
+import { useLessonDetails } from "@/hooks/useLessons";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useTutorial } from "@/providers/TutorialProvider";
 
 export default function LessonContentScreen() {
   const router = useRouter();
-  const { category: categoryId } = useLocalSearchParams<{ category: string }>();
+  const { category: categoryId, lessonId } = useLocalSearchParams<{
+    category: string;
+    lessonId?: string;
+  }>();
   const [screenIndex, setScreenIndex] = useState(0);
   const insets = useSafeAreaInsets();
 
@@ -21,22 +25,36 @@ export default function LessonContentScreen() {
   const continueRef = useRef<View>(null);
   useTutorialTarget("lesson-intro", continueRef);
 
-  const lesson = LESSONS[categoryId];
+  const effectiveLessonId = lessonId || `${categoryId}_1`;
+  const { data: dbLesson } = useLessonDetails(effectiveLessonId, categoryId);
+  const localLesson = LESSONS[categoryId];
+  const lesson = dbLesson || (localLesson ? {
+    id: effectiveLessonId,
+    title: localLesson.title,
+    screens: localLesson.screens,
+    questions: localLesson.questions,
+  } : null);
+
   const category = CATEGORIES.find((item) => item.id === categoryId);
 
   if (!lesson || !category) {
     return <Redirect href="/categories" />;
   }
 
-  const screen = lesson.screens[screenIndex];
-  const isLastScreen = screenIndex === lesson.screens.length - 1;
-  const progress = (screenIndex + 1) / LESSON_STEPS;
+  const screens = lesson.screens || [];
+  const screen = screens[screenIndex];
+  const isLastScreen = screens.length === 0 || screenIndex === screens.length - 1;
+  const totalSteps = (screens.length || 4) + ((lesson as any).questions?.length || 8);
+  const progress = screens.length > 0 ? (screenIndex + 1) / totalSteps : 0;
 
   function handleContinue() {
-    if (isLastScreen) {
+    if (isLastScreen || screens.length === 0) {
       // Dernier écran de contenu : avance le tuto en même temps qu'on passe aux questions.
       pressTarget("lesson-intro");
-      router.push({ pathname: "/lesson", params: { category: categoryId } });
+      router.push({
+        pathname: "/lesson",
+        params: { category: categoryId, lessonId: effectiveLessonId },
+      });
       return;
     }
     setScreenIndex((i) => i + 1);

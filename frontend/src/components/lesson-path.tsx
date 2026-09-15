@@ -1,8 +1,10 @@
 import { Category } from "@/constants/categories";
+import { useCategoryUnits } from "@/hooks/useLessons";
 import { useTutorial } from "@/providers/TutorialProvider";
+import { DBLesson } from "@/types/lesson";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Lock, Wallet } from "lucide-react-native";
+import { Lock } from "lucide-react-native";
 import type { RefObject } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -15,86 +17,118 @@ export function LessonPath({
 }) {
   const router = useRouter();
   const { pressTarget } = useTutorial();
+  const { data: units } = useCategoryUnits(category.id);
 
-  // Determine accent color from border color or default
+  // Détermination des couleurs de la catégorie
   const accentColor = category.borderColor || "#8B5CF6";
   const mainColor = category.color || "#8B5CF6";
 
+  const handleStartLesson = (lesson: DBLesson) => {
+    // Avance le tutoriel si actif et lance la leçon
+    pressTarget("lesson-node");
+    router.push({
+      pathname: "/lesson-content",
+      params: {
+        category: category.id,
+        lessonId: lesson.id,
+      },
+    });
+  };
+
+  if (!units || units.length === 0) {
+    return null;
+  }
+
   return (
     <>
-      <View style={[styles.unitCard, { backgroundColor: mainColor }]}>
-        <Text style={styles.unitTitle}>Unité 1</Text>
-        <Text style={[styles.unitSubtitle, { color: accentColor }]}>{category.subtitle}</Text>
-      </View>
+      {units.map((unit, unitIndex) => {
+        return (
+          <View key={unit.id || `unit_${unitIndex}`}>
+            {/* CARTE D'UNITÉ */}
+            <View style={[styles.unitCard, { backgroundColor: mainColor }]}>
+              <Text style={styles.unitTitle}>{unit.title}</Text>
+              <Text style={[styles.unitSubtitle, { color: accentColor }]}>
+                {unit.subtitle || category.subtitle}
+              </Text>
+            </View>
 
-      <View style={styles.timeline}>
-        <View style={styles.line} />
+            {/* PARCOURS DE LEÇONS DANS CETTE UNITÉ */}
+            <View style={styles.timeline}>
+              <View style={styles.line} />
 
-        {/* Step completed */}
-        <View style={styles.stepContainer}>
-          <View style={[styles.completedStep, { backgroundColor: accentColor, borderColor: mainColor }]}>
-            <Text style={[styles.check, { color: mainColor }]}>✓</Text>
+              {unit.lessons.map((lesson, lessonIndex) => {
+                const isFirstActive =
+                  lesson.status === "unlocked" &&
+                  unit.lessons.slice(0, lessonIndex).every((l) => l.status === "completed");
+
+                // Mascotte insérée après la 1ère ou 2ème leçon de l'Unité 1
+                const showMascot = unitIndex === 0 && lessonIndex === 1;
+
+                return (
+                  <View key={lesson.id} style={styles.nodeWrapper}>
+                    {lesson.status === "completed" ? (
+                      /* Étape complétée */
+                      <View style={styles.stepContainer}>
+                        <TouchableOpacity
+                          style={[
+                            styles.completedStep,
+                            { backgroundColor: accentColor, borderColor: mainColor },
+                          ]}
+                          onPress={() => handleStartLesson(lesson)}
+                          activeOpacity={0.8}>
+                          <Text style={[styles.check, { color: mainColor }]}>✓</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : lesson.status === "unlocked" ? (
+                      /* Étape en cours (START) */
+                      <View style={styles.startContainer}>
+                        <View style={styles.startBadge}>
+                          <Text style={[styles.startText, { color: accentColor }]}>START</Text>
+                        </View>
+
+                        <TouchableOpacity
+                          ref={isFirstActive ? nodeRef : undefined}
+                          style={[
+                            styles.mainStep,
+                            { backgroundColor: category.color, borderColor: accentColor },
+                          ]}
+                          onPress={() => handleStartLesson(lesson)}
+                          activeOpacity={0.85}>
+                          <category.icon color="#FFFFFF" size={42} />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      /* Étape verrouillée */
+                      <View style={styles.stepContainer}>
+                        <View style={styles.lockedStep}>
+                          <Lock size={28} color="#AFAFB8" />
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Bulle mascotte */}
+                    {showMascot && (
+                      <View style={styles.speechWrapper}>
+                        <View style={styles.bubble}>
+                          <Text style={styles.bubbleText}>
+                            Lance-toi dans les {"\n"}défis {category.label} !
+                          </Text>
+                        </View>
+
+                        <Image
+                          source={category.mascot}
+                          style={styles.mascot}
+                          contentFit="contain"
+                        />
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
           </View>
-        </View>
-
-        <View style={styles.stepContainer}>
-          <View style={[styles.completedStep, { backgroundColor: accentColor, borderColor: mainColor }]}>
-            <Text style={[styles.check, { color: mainColor }]}>✓</Text>
-          </View>
-        </View>
-
-        {/* START */}
-        <View style={styles.startContainer}>
-          <View style={styles.startBadge}>
-            <Text style={[styles.startText, { color: accentColor }]}>START</Text>
-          </View>
-
-          <TouchableOpacity
-            ref={nodeRef}
-            style={[styles.mainStep, { backgroundColor: category.color, borderColor: accentColor }]}
-            onPress={() => {
-              // Tap START : avance le tuto ET lance la leçon (flux réel).
-              pressTarget("lesson-node");
-              router.push({ pathname: "/lesson-content", params: { category: category.id } });
-            }}>
-            <category.icon color="#FFFFFF" size={42} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Mascotte */}
-        <View style={styles.speechWrapper}>
-          <View style={styles.bubble}>
-            <Text style={styles.bubbleText}>
-              Lance-toi dans les {"\n"}défis {category.label} !
-            </Text>
-          </View>
-
-          <Image
-            source={category.mascot}
-            style={styles.mascot}
-            contentFit="contain"
-          />
-        </View>
-
-        {/* Locked */}
-        <View style={styles.stepContainer}>
-          <View style={styles.lockedStep}>
-            <Lock size={28} color="#AFAFB8" />
-          </View>
-        </View>
-
-        <View style={styles.stepContainer}>
-          <View style={styles.lockedStep}>
-            <Wallet size={28} color="#AFAFB8" />
-          </View>
-        </View>
-      </View>
-
-      {/* UNITÉ 2 */}
-      <View style={styles.unitCard}>
-        <Text style={styles.unitTitle}>Unité 2</Text>
-        <Text style={styles.unitSubtitle}>Les impôts démystifiés</Text>
-      </View>
+        );
+      })}
     </>
   );
 }
@@ -102,7 +136,6 @@ export function LessonPath({
 const styles = StyleSheet.create({
   unitCard: {
     margin: 24,
-    backgroundColor: "#A178FF",
     borderRadius: 18,
     padding: 18,
     elevation: 3,
@@ -133,6 +166,10 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     borderRadius: 20,
+  },
+
+  nodeWrapper: {
+    alignItems: "center",
   },
 
   stepContainer: {
@@ -168,6 +205,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 5,
     zIndex: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   startText: {
@@ -189,7 +231,7 @@ const styles = StyleSheet.create({
   speechWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 40,
+    marginVertical: 30,
   },
 
   bubble: {
