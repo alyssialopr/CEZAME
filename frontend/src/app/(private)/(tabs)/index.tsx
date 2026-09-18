@@ -9,7 +9,9 @@ import {
 } from "react-native";
 
 import { LessonPath } from "@/components/lesson-path";
+import { AnimatedCounter } from "@/components/animated-counter";
 import { useProgress } from "@/hooks/useProgress";
+import { useRewards } from "@/hooks/useRewards";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { LESSONS } from "@/constants/lessons";
 import { useActiveCategory } from "@/providers/CategoryProvider";
@@ -21,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function HomeScreen() {
   const router = useRouter();
   const { data: progress } = useProgress();
+  const { gems } = useRewards();
   const { activeCategory, isInitialized } = useActiveCategory();
 
   const {
@@ -63,12 +66,12 @@ export default function HomeScreen() {
         <View style={styles.stats}>
           <View style={styles.stat}>
             <Flame size={18} color={progress?.streak && progress.streak > 0 ? "#FF9800" : "#E5E5E5"} />
-            <Text style={styles.orange}>{progress?.streak || 0}</Text>
+            <AnimatedCounter value={progress?.streak || 0} color="#FF9800" fontSize={14} />
           </View>
 
           <View style={styles.stat}>
             <Gem size={18} color="#29B6F6" />
-            <Text style={styles.blue}>500</Text>
+            <AnimatedCounter value={gems} color="#29B6F6" fontSize={14} />
           </View>
         </View>
       </View>

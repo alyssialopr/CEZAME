@@ -1,10 +1,13 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import {
+  Car,
+  FileText,
   Flame,
   Footprints,
   Gem,
   Heart,
+  Key,
   Landmark,
   Lock,
   LogOut,
@@ -20,14 +23,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { supabase } from "@/lib/supabase";
 import { useProgress } from "@/hooks/useProgress";
+import { useRewards } from "@/hooks/useRewards";
 import { useAuth } from "@/providers/AuthProvider";
 import { useTutorial } from "@/providers/TutorialProvider";
 
-const BADGES = [
-  { key: "premier-pas", label: "Premier Pas", icon: Footprints, color: "#9B6CFF", unlocked: true },
-  { key: "as-du-budget", label: "As du Budget", icon: PiggyBank, color: "#5FC97A", unlocked: true },
-  { key: "sante-de-fer", label: "Santé de Fer", icon: Heart, color: "#FF6B7A", unlocked: true },
-  { key: "pro-impot", label: "Pro de l'Impôt", icon: Lock, color: "#D4D0DB", unlocked: false },
+const PROFILE_BADGES = [
+  { key: "premier-pas", label: "Premier Pas", icon: Footprints, color: "#9B6CFF" },
+  { key: "as-du-budget", label: "As du Budget", icon: PiggyBank, color: "#5FC97A" },
+  { key: "sante-de-fer", label: "Santé de Fer", icon: Heart, color: "#FF6B7A" },
+  { key: "pro-demarches", label: "Pro Démarches", icon: FileText, color: "#6366F1" },
+  { key: "cle-en-main", label: "Clé en Main", icon: Key, color: "#F97316" },
+  { key: "pilote-vigilant", label: "Pilote Vigilant", icon: Car, color: "#EC4899" },
 ];
 
 const RANK_INFO: Record<'bronze' | 'silver' | 'gold' | 'diamond' | 'rainbow', { label: string; color: string }> = {
@@ -42,6 +48,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { data: progress } = useProgress();
+  const { gems, unlockedBadges } = useRewards();
   const { requestTutorial } = useTutorial();
 
   const handleLogout = () => {
@@ -79,7 +86,7 @@ export default function ProfileScreen() {
 
         <View style={styles.stat}>
           <Gem size={18} color="#29B6F6" />
-          <Text style={styles.blue}>500</Text>
+          <Text style={styles.blue}>{gems}</Text>
         </View>
       </View>
 
@@ -127,22 +134,29 @@ export default function ProfileScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>Badges Réussis</Text>
-        <View style={styles.badgesRow}>
-          {BADGES.map(({ key, label, icon: Icon, color, unlocked }) => (
-            <View key={key} style={styles.badgeItem}>
-              <View
-                style={[
-                  styles.badgeCircle,
-                  { backgroundColor: unlocked ? color : "#ECEAF1" },
-                ]}>
-                <Icon size={24} color={unlocked ? "#FFFFFF" : "#AFAFB8"} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgesRow}>
+          {PROFILE_BADGES.map(({ key, label, icon: Icon, color }) => {
+            const isUnlocked = unlockedBadges.includes(key);
+            return (
+              <View key={key} style={styles.badgeItem}>
+                <View
+                  style={[
+                    styles.badgeCircle,
+                    { backgroundColor: isUnlocked ? color : "#ECEAF1" },
+                  ]}>
+                  {isUnlocked ? (
+                    <Icon size={24} color="#FFFFFF" />
+                  ) : (
+                    <Lock size={20} color="#AFAFB8" />
+                  )}
+                </View>
+                <Text style={[styles.badgeLabel, !isUnlocked && styles.badgeLabelLocked]}>
+                  {label}
+                </Text>
               </View>
-              <Text style={[styles.badgeLabel, !unlocked && styles.badgeLabelLocked]}>
-                {label}
-              </Text>
-            </View>
-          ))}
-        </View>
+            );
+          })}
+        </ScrollView>
 
         <View style={styles.speechWrapper}>
           <Image
