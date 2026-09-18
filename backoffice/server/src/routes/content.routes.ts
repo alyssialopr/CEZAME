@@ -28,7 +28,7 @@ router.get('/categories', async (_req, res) => {
 
 router.post('/categories', async (req: AuthenticatedRequest, res) => {
   try {
-    const { id, label, subtitle, color, border_color, icon_name, order_index } = req.body;
+    const { id, label, subtitle, color, border_color, icon_name, mascot_name, order_index } = req.body;
     if (!id || !label) {
       res.status(400).json({ error: 'ID et libellé de catégorie requis' });
       return;
@@ -43,6 +43,7 @@ router.post('/categories', async (req: AuthenticatedRequest, res) => {
         color: color || '#8FA6FF',
         border_color: border_color || '#607FE8',
         icon_name: icon_name || 'FileText',
+        mascot_name: mascot_name || 'RicoEntreprise',
         order_index: Number(order_index) || 1,
       })
       .select()
@@ -59,7 +60,7 @@ router.post('/categories', async (req: AuthenticatedRequest, res) => {
       action: 'CREATE_CATEGORY',
       targetType: 'category',
       targetId: id,
-      details: { label },
+      details: { label, mascot_name },
     });
 
     res.json(data);
@@ -71,7 +72,7 @@ router.post('/categories', async (req: AuthenticatedRequest, res) => {
 router.put('/categories/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = String(req.params.id);
-    const { label, subtitle, color, border_color, icon_name, order_index } = req.body;
+    const { label, subtitle, color, border_color, icon_name, mascot_name, order_index } = req.body;
 
     const { data, error } = await supabaseAdmin
       .from('categories')
@@ -81,6 +82,7 @@ router.put('/categories/:id', async (req: AuthenticatedRequest, res) => {
         color,
         border_color,
         icon_name,
+        mascot_name: mascot_name || 'RicoEntreprise',
         order_index: Number(order_index) || 1,
       })
       .eq('id', id)
@@ -169,7 +171,7 @@ router.get('/units', async (req, res) => {
 
 router.post('/units', async (req: AuthenticatedRequest, res) => {
   try {
-    const { category_id, unit_number, title, subtitle, order_index } = req.body;
+    const { category_id, unit_number, title, subtitle, mascot_name, order_index } = req.body;
     if (!category_id || !title) {
       res.status(400).json({ error: 'Catégorie et titre requis' });
       return;
@@ -182,6 +184,7 @@ router.post('/units', async (req: AuthenticatedRequest, res) => {
         unit_number: Number(unit_number) || 1,
         title,
         subtitle,
+        mascot_name: mascot_name || null,
         order_index: Number(order_index) || 1,
       })
       .select()
@@ -198,7 +201,7 @@ router.post('/units', async (req: AuthenticatedRequest, res) => {
       action: 'CREATE_UNIT',
       targetType: 'unit',
       targetId: data.id,
-      details: { title, category_id },
+      details: { title, category_id, mascot_name },
     });
 
     res.json(data);
@@ -210,7 +213,7 @@ router.post('/units', async (req: AuthenticatedRequest, res) => {
 router.put('/units/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = String(req.params.id);
-    const { unit_number, title, subtitle, order_index } = req.body;
+    const { unit_number, title, subtitle, mascot_name, order_index } = req.body;
 
     const { data, error } = await supabaseAdmin
       .from('units')
@@ -218,6 +221,7 @@ router.put('/units/:id', async (req: AuthenticatedRequest, res) => {
         unit_number: Number(unit_number),
         title,
         subtitle,
+        mascot_name: mascot_name || null,
         order_index: Number(order_index),
       })
       .eq('id', id)

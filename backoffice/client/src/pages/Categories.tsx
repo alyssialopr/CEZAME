@@ -6,6 +6,8 @@ import api from '../services/api.js';
 import { Category, Unit } from '../types/index.js';
 import { Plus, Edit2, Trash2, FolderPlus, Layers, Hash } from 'lucide-react';
 import { Badge } from '../components/ui/Badge.js';
+import { MascotPicker } from '../components/ui/MascotPicker.js';
+import { UnitCardPreview } from '../components/preview/UnitCardPreview.js';
 
 export const Categories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -23,6 +25,7 @@ export const Categories: React.FC = () => {
     color: '#8FA6FF',
     border_color: '#607FE8',
     icon_name: 'FileText',
+    mascot_name: 'RicoEntreprise',
     order_index: 1,
   });
 
@@ -33,6 +36,7 @@ export const Categories: React.FC = () => {
     unit_number: 1,
     title: '',
     subtitle: '',
+    mascot_name: '' as string | null,
     order_index: 1,
   });
 
@@ -84,6 +88,7 @@ export const Categories: React.FC = () => {
         color: cat.color,
         border_color: cat.border_color || '#607FE8',
         icon_name: cat.icon_name || 'FileText',
+        mascot_name: cat.mascot_name || 'RicoEntreprise',
         order_index: cat.order_index,
       });
     } else {
@@ -95,6 +100,7 @@ export const Categories: React.FC = () => {
         color: '#8FA6FF',
         border_color: '#607FE8',
         icon_name: 'FileText',
+        mascot_name: 'RicoEntreprise',
         order_index: categories.length + 1,
       });
     }
@@ -143,6 +149,7 @@ export const Categories: React.FC = () => {
         unit_number: unit.unit_number,
         title: unit.title,
         subtitle: unit.subtitle || '',
+        mascot_name: unit.mascot_name || null,
         order_index: unit.order_index,
       });
     } else {
@@ -151,6 +158,7 @@ export const Categories: React.FC = () => {
         unit_number: units.length + 1,
         title: '',
         subtitle: '',
+        mascot_name: null,
         order_index: units.length + 1,
       });
     }
@@ -406,7 +414,7 @@ export const Categories: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Couleur Principale</label>
               <div className="flex items-center gap-2">
@@ -420,7 +428,25 @@ export const Categories: React.FC = () => {
                   type="text"
                   value={catForm.color}
                   onChange={(e) => setCatForm({ ...catForm, color: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl"
+                  className="w-full px-2.5 py-1.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Couleur Bordure</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={catForm.border_color}
+                  onChange={(e) => setCatForm({ ...catForm, border_color: e.target.value })}
+                  className="w-9 h-9 rounded-lg cursor-pointer border-0"
+                />
+                <input
+                  type="text"
+                  value={catForm.border_color}
+                  onChange={(e) => setCatForm({ ...catForm, border_color: e.target.value })}
+                  className="w-full px-2.5 py-1.5 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl"
                 />
               </div>
             </div>
@@ -434,6 +460,27 @@ export const Categories: React.FC = () => {
                 className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Mascotte Contextuelle de la Catégorie
+            </label>
+            <MascotPicker
+              value={catForm.mascot_name}
+              onChange={(m) => setCatForm({ ...catForm, mascot_name: m || 'RicoEntreprise' })}
+            />
+          </div>
+
+          <div className="pt-2">
+            <UnitCardPreview
+              unitNumber={1}
+              title={catForm.label || 'Titre de l’Unité'}
+              subtitle={catForm.subtitle || 'Sous-titre explicatif'}
+              color={catForm.color}
+              borderColor={catForm.border_color}
+              mascotName={catForm.mascot_name}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
@@ -504,6 +551,29 @@ export const Categories: React.FC = () => {
               onChange={(e) => setUnitForm({ ...unitForm, subtitle: e.target.value })}
               placeholder="ex: Prendre soin de soi"
               className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Mascotte pour cette Unité (Optionnel)
+            </label>
+            <MascotPicker
+              value={unitForm.mascot_name}
+              onChange={(m) => setUnitForm({ ...unitForm, mascot_name: m })}
+              allowInherit={true}
+              inheritedMascotName={selectedCategory?.mascot_name || 'RicoEntreprise'}
+            />
+          </div>
+
+          <div className="pt-2">
+            <UnitCardPreview
+              unitNumber={unitForm.unit_number}
+              title={unitForm.title || `Unité ${unitForm.unit_number}`}
+              subtitle={unitForm.subtitle || selectedCategory?.subtitle}
+              color={selectedCategory?.color}
+              borderColor={selectedCategory?.border_color}
+              mascotName={unitForm.mascot_name || selectedCategory?.mascot_name}
             />
           </div>
 

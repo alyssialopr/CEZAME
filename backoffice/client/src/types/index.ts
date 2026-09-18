@@ -14,6 +14,7 @@ export interface Category {
   color: string;
   border_color?: string;
   icon_name: string;
+  mascot_name?: string;
   order_index: number;
   created_at?: string;
 }
@@ -24,6 +25,7 @@ export interface Unit {
   unit_number: number;
   title: string;
   subtitle?: string;
+  mascot_name?: string | null;
   order_index: number;
   created_at?: string;
   lessons?: { id: string; title: string; order_index: number; status: string }[];
