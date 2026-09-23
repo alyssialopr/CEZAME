@@ -17,6 +17,7 @@ export type DBUnit = {
   unit_number: number;
   title: string;
   subtitle: string | null;
+  mascot_name?: string | null;
   order_index: number;
   lessons: DBLesson[];
 };

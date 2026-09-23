@@ -138,6 +138,8 @@ export async function fetchCategoryUnits(
         .order('order_index', { ascending: true });
 
       if (!lessonsError && lessonsData && lessonsData.length > 0) {
+        const scoreMap: Record<string, number> = {};
+
         // Récupérer la progression Supabase si l'utilisateur est connecté
         if (userId) {
           const { data: userProgData } = await supabase
@@ -148,6 +150,9 @@ export async function fetchCategoryUnits(
           if (userProgData) {
             userProgData.forEach((p) => {
               progressMap[p.lesson_id] = p.status as LessonProgressStatus;
+              if (typeof p.score === 'number') {
+                scoreMap[p.lesson_id] = p.score;
+              }
             });
             // Mettre à jour le cache local de progression
             await AsyncStorage.setItem(
@@ -185,6 +190,7 @@ export async function fetchCategoryUnits(
                 title: lesson.title,
                 xp_reward: lesson.xp_reward,
                 status,
+                score: scoreMap[lesson.id] ?? (status === 'completed' ? 100 : undefined),
               };
             });
 
@@ -194,6 +200,7 @@ export async function fetchCategoryUnits(
             unit_number: unit.unit_number,
             title: unit.title,
             subtitle: unit.subtitle,
+            mascot_name: (unit as any).mascot_name || null,
             order_index: unit.order_index,
             lessons: unitLessons,
           };
