@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "lesson": {
+    "title": "Exemple 01 - QCM Classique",
+    "xp_reward": 50,
+    "screens": [
+      {
+        "title": "Comprendre le prélèvement automatique",
+        "body": "Le prélèvement SEPA est un moyen de paiement très courant pour régler les dépenses récurrentes comme le loyer, l'électricité ou un abonnement téléphonique. Il fonctionne grâce à un mandat que tu signes avec ton RIB.",
+        "tip": "Bon réflexe : Tu peux révoquer ou contester un prélèvement injustifié directement depuis ton espace bancaire en ligne."
+      }
+    ],
+    "questions": [
+      {
+        "type": "qcm",
+        "category": "Vocabulaire bancaire",
+        "prompt": "Qu'est-ce qu'un prélèvement automatique SEPA ?",
+        "options": [
+          {
+            "letter": "A",
+            "text": "Un paiement régulier déclenché par un créancier autorisé avec ton RIB",
+            "correct": true
+          },
+          {
+            "letter": "B",
+            "text": "Une taxe obligatoire prélevée par l'État sur tous les comptes jeunes",
+            "correct": false
+          },
+          {
+            "letter": "C",
+            "text": "Une commission facturée par ta banque lors de chaque achat en carte",
+            "correct": false
+          }
+        ],
+        "explanation": "Le prélèvement SEPA permet à un fournisseur (électricité, opérateur, bailleur) de prélever directement tes factures chaque mois après signature d'un mandat."
+      }
+    ]
+  }
+}

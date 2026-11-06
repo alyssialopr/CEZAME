@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "lesson": {
+    "title": "Exemple 06 - Détecteur d'Arnaque",
+    "xp_reward": 50,
+    "screens": [
+      {
+        "title": "Reconnaître les tentatives d'escroquerie (phishing)",
+        "body": "Les escrocs imitent les banques, l'Assurance maladie (Ameli), la CAF ou l'ANTAI pour dérober tes identifiants ou tes coordonnées bancaires. Les messages reposent souvent sur la peur, l'urgence ou une fausse bonne nouvelle (remboursement inattendu).",
+        "tip": "Bon réflexe : Une banque ou un organisme public ne vous demandera JAMAIS de cliquer sur un lien pour annuler une opération frauduleuse."
+      }
+    ],
+    "questions": [
+      {
+        "type": "scam",
+        "category": "Sécurité bancaire",
+        "prompt": "Tu reçois ce SMS sur ton téléphone. D'après toi, arnaque ou authentique ?",
+        "options": {
+          "sender": "Alerte-Banque (+33 7 45 12 98 23)",
+          "channel": "sms",
+          "message": "ALERTE SÉCURITÉ : Un paiement suspect de 489,00 € a été initié sur votre carte. Si vous n'êtes pas à l'origine de cette opération, annulez-la immédiatement sur https://espace-securite-banque-annulation.com",
+          "isScam": true,
+          "redFlags": [
+            "Une banque ne demande JAMAIS d'annuler une opération via un lien par SMS",
+            "Le message provient d'un numéro de téléphone individuel en 07",
+            "L'adresse URL mène vers un faux site pirate non sécurisé imitant la banque"
+          ]
+        },
+        "explanation": "C'est l'escroquerie au faux conseiller bancaire. En cas de doute, ouvrez toujours vous-même votre application bancaire officielle sans cliquer sur le lien du SMS."
+      }
+    ]
+  }
+}

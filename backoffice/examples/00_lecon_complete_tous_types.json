@@ -1,0 +1,251 @@
+{
+  "version": "1.0",
+  "lesson": {
+    "title": "Master - Tous les Types d'Exercices",
+    "xp_reward": 100,
+    "screens": [
+      {
+        "title": "Bienvenue dans l'entraînement CEZAME",
+        "body": "Cette leçon de démonstration réunit l'ensemble des 7 types d'exercices interactifs conçus pour rendre l'apprentissage de l'autonomie financière et administrative engageant et pratique.",
+        "tip": "Bon réflexe : Chaque type d'exercice cible une compétence clé : mémoriser, ordonner, associer, décrypter un document, classifier son budget, déjouer les fraudes et réagir en situation réelle."
+      },
+      {
+        "title": "Comment fonctionnent les évaluations",
+        "body": "Dans l'application, chaque bonne réponse rapporte des points d'XP et consolide ta progression. Une erreur fait perdre un cœur et affiche immédiatement l'explication pédagogique pour apprendre sans stress.",
+        "tip": "Tu as droit à 5 cœurs par session qui se rechargent au fil du temps."
+      }
+    ],
+    "questions": [
+      {
+        "order_index": 1,
+        "type": "qcm",
+        "category": "1. QCM Standard",
+        "prompt": "Qu'est-ce qu'un prélèvement automatique SEPA ?",
+        "options": [
+          {
+            "letter": "A",
+            "text": "Un paiement régulier déclenché par un créancier autorisé avec ton RIB",
+            "correct": true
+          },
+          {
+            "letter": "B",
+            "text": "Une taxe obligatoire prélevée par l'État sur tous les comptes jeunes",
+            "correct": false
+          },
+          {
+            "letter": "C",
+            "text": "Une commission facturée par ta banque lors de chaque achat en carte",
+            "correct": false
+          }
+        ],
+        "explanation": "Le prélèvement SEPA permet à un fournisseur (électricité, opérateur, bailleur) de prélever directement tes factures chaque mois après signature d'un mandat."
+      },
+      {
+        "order_index": 2,
+        "type": "order",
+        "category": "2. Remettre dans l'ordre",
+        "prompt": "Remets dans le bon ordre les étapes pour te soigner et être remboursé :",
+        "options": [
+          {
+            "id": "1",
+            "text": "Prendre rendez-vous avec ton médecin traitant déclaré"
+          },
+          {
+            "id": "2",
+            "text": "Présenter ta carte Vitale en début de consultation"
+          },
+          {
+            "id": "3",
+            "text": "Régler la consultation ou bénéficier du tiers-payant"
+          },
+          {
+            "id": "4",
+            "text": "Télétransmission automatique : remboursement Sécu puis Mutuelle"
+          }
+        ],
+        "explanation": "En déclarant un médecin traitant et en présentant ta carte Vitale, la télétransmission est automatique et le taux de remboursement est maximal (70% Sécu + part Mutuelle)."
+      },
+      {
+        "order_index": 3,
+        "type": "matching",
+        "category": "3. Bonne association",
+        "prompt": "Associe chaque document ou dispositif à son utilité concrète :",
+        "options": [
+          {
+            "id": "1",
+            "left": "Garantie Visale",
+            "right": "Caution locative gratuite délivrée par Action Logement"
+          },
+          {
+            "id": "2",
+            "left": "Dépôt de garantie",
+            "right": "Caution rendue en fin de bail après état des lieux"
+          },
+          {
+            "id": "3",
+            "left": "Quittance de loyer",
+            "right": "Preuve de paiement mensuel servant de justificatif de domicile"
+          },
+          {
+            "id": "4",
+            "left": "DossierFacile",
+            "right": "Service public pour filigraner et protéger ses pièces"
+          }
+        ],
+        "explanation": "Ces 4 éléments sont les indispensables pour constituer un dossier locataire solide et sécuriser sa location."
+      },
+      {
+        "order_index": 4,
+        "type": "document",
+        "category": "4. Décryptage de document",
+        "prompt": "Sur ce bulletin de paie, touche la ligne qui indique la somme réelle virée sur ton compte bancaire :",
+        "options": [
+          {
+            "id": "1",
+            "label": "Salaire brut mensuel (35h)",
+            "value": "2 050,00 €",
+            "correct": false
+          },
+          {
+            "id": "2",
+            "label": "Total cotisations sociales salariales",
+            "value": "- 435,20 €",
+            "correct": false
+          },
+          {
+            "id": "3",
+            "label": "Net à payer avant impôt sur le revenu",
+            "value": "1 614,80 €",
+            "correct": false
+          },
+          {
+            "id": "4",
+            "label": "Net payé en euros (Virement bancaire)",
+            "value": "1 614,80 €",
+            "correct": true
+          }
+        ],
+        "explanation": "La ligne 'Net payé en euros' correspond à la somme effectivement transférée sur ton compte en banque."
+      },
+      {
+        "order_index": 5,
+        "type": "bucket",
+        "category": "5. Tri en bacs",
+        "prompt": "Classe chaque dépense dans son bac budgétaire correspondant (règle 50/30/20) :",
+        "options": {
+          "buckets": [
+            {
+              "id": "b1",
+              "label": "Besoins (50%)",
+              "color": "#3B82F6"
+            },
+            {
+              "id": "b2",
+              "label": "Envies (30%)",
+              "color": "#8B5CF6"
+            },
+            {
+              "id": "b3",
+              "label": "Épargne (20%)",
+              "color": "#10B981"
+            }
+          ],
+          "items": [
+            {
+              "id": "1",
+              "text": "Loyer et électricité",
+              "bucketId": "b1"
+            },
+            {
+              "id": "2",
+              "text": "Sorties restaurant et cinéma",
+              "bucketId": "b2"
+            },
+            {
+              "id": "3",
+              "text": "Virement mensuel sur Livret A",
+              "bucketId": "b3"
+            },
+            {
+              "id": "4",
+              "text": "Courses alimentaires de base",
+              "bucketId": "b1"
+            },
+            {
+              "id": "5",
+              "text": "Abonnement plateforme streaming",
+              "bucketId": "b2"
+            }
+          ]
+        },
+        "explanation": "50% pour les dépenses vitales (loyer, alimentation), 30% pour les plaisirs de la vie quotidienne, et 20% pour sécuriser ton avenir financier !"
+      },
+      {
+        "order_index": 6,
+        "type": "scam",
+        "category": "6. Détecteur d'arnaque",
+        "prompt": "Tu reçois ce SMS sur ton téléphone. D'après toi, arnaque ou authentique ?",
+        "options": {
+          "sender": "Alerte-Banque (+33 7 45 12 98 23)",
+          "channel": "sms",
+          "message": "ALERTE SÉCURITÉ : Un paiement suspect de 489,00 € a été initié sur votre carte. Si vous n'êtes pas à l'origine de cette opération, annulez-la immédiatement sur https://espace-securite-banque-annulation.com",
+          "isScam": true,
+          "redFlags": [
+            "Une banque ne demande JAMAIS d'annuler une opération via un lien par SMS",
+            "Le message provient d'un numéro de téléphone individuel en 07",
+            "L'adresse URL mène vers un faux site pirate non sécurisé imitant la banque"
+          ]
+        },
+        "explanation": "C'est l'escroquerie au faux conseiller bancaire. En cas de doute, ouvrez toujours vous-même votre application bancaire officielle sans cliquer sur le lien du SMS."
+      },
+      {
+        "order_index": 7,
+        "type": "scenario",
+        "category": "7. Cas pratique",
+        "prompt": "Aide Maxime à résoudre son imprévu financier de fin de mois.",
+        "options": {
+          "context": "Maxime, 21 ans, est étudiant et apprenti. Il lui reste 35 € sur son compte en banque alors que sa paie tombe dans 10 jours. Sa machine à laver vient de lâcher et une facture d'électricité de 55 € arrive dans 3 jours.",
+          "persona": {
+            "name": "Maxime",
+            "role": "Apprenti 21 ans"
+          },
+          "keyFacts": [
+            {
+              "label": "Solde compte",
+              "value": "35 €"
+            },
+            {
+              "label": "Facture énergie",
+              "value": "55 €"
+            },
+            {
+              "label": "Délai paie",
+              "value": "10 jours"
+            }
+          ],
+          "options": [
+            {
+              "id": "opt1",
+              "text": "Demander un report d'échéance au fournisseur et utiliser une laverie le temps d'être payé",
+              "correct": true,
+              "consequence": "Super réflexe ! Les fournisseurs d'énergie décalent facilement un prélèvement sans frais si on prévient avant, et la laverie dépanne à moindre coût."
+            },
+            {
+              "id": "opt2",
+              "text": "Laisser le prélèvement passer et acheter une machine neuve à crédit en magasin",
+              "correct": false,
+              "consequence": "Attention : le prélèvement sera rejeté avec environ 20 € de frais bancaires d'agios, et le crédit aggravera le budget du mois prochain."
+            },
+            {
+              "id": "opt3",
+              "text": "Souscrire un mini-prêt express à 20% d'intérêts sur Internet",
+              "correct": false,
+              "consequence": "Piège coûteux : les taux de ces crédits rapides sont disproportionnés et créent un engrenage de dettes."
+            }
+          ]
+        },
+        "explanation": "Anticiper et communiquer avec ses créanciers avant la date d'échéance évite les frais de rejet et l'endettement."
+      }
+    ]
+  }
+}
