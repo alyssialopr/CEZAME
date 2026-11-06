@@ -50,6 +50,7 @@ describe('POST /api/import-export/lessons', () => {
 
   it("importe un export en brouillon et conserve les types d'exercice", async () => {
     asAdmin((c) => {
+      if (c.table === 'lessons' && has(c, 'order')) return { data: [{ order_index: 3 }] };
       if (c.table === 'lessons' && has(c, 'select', '*', { count: 'exact', head: true })) return { count: 3 };
       if (c.table === 'lessons' && has(c, 'insert')) return { data: { id: 'NEW', title: 'Carte vitale' } };
     });
@@ -88,10 +89,19 @@ describe('POST /api/import-export/lessons', () => {
     expect(callsTo('lesson_questions')).toHaveLength(0);
   });
 
-  // Constat : order_index est calculé par unité, mais la contrainte SQL est
-  // UNIQUE(category_id, order_index). Un import dans la 2e unité d'une catégorie
-  // peut donc entrer en collision. À corriger côté route avant d'activer ce test.
-  it.todo("calcule order_index sur la catégorie, comme l'impose la contrainte UNIQUE(category_id, order_index)");
+  it("calcule order_index sur la catégorie, comme l'impose la contrainte UNIQUE(category_id, order_index)", async () => {
+    asAdmin((c) => {
+      if (c.table === 'lessons' && has(c, 'order')) return { data: [{ order_index: 7 }] };
+      if (c.table === 'lessons' && has(c, 'insert')) return { data: { id: 'NEW_ORD', title: 'Y' } };
+    });
+    const res = await request(app)
+      .post('/api/import-export/lessons')
+      .set(AUTH)
+      .send({ targetUnitId: 'U2', targetCategoryId: 'sante', payload: { title: 'Y' } });
+    expect(res.status).toBe(200);
+    const lessonInsert = callsTo('lessons').find((c) => has(c, 'insert'))!;
+    expect(argsOf(lessonInsert, 'insert')?.[0]?.order_index).toBe(8);
+  });
 });
 
 describe('POST /api/import-export/lessons/batch', () => {
