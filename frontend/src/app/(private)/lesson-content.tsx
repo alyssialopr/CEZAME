@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { Heart, X } from "lucide-react-native";
 import { useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
@@ -22,7 +22,7 @@ export default function LessonContentScreen() {
   const insets = useSafeAreaInsets();
 
   const { pressTarget } = useTutorial();
-  const continueRef = useRef<View>(null);
+  const continueRef = useRef<ViewInstance>(null);
   useTutorialTarget("lesson-intro", continueRef);
 
   const effectiveLessonId = lessonId || `${categoryId}_1`;
@@ -47,11 +47,15 @@ export default function LessonContentScreen() {
   const totalSteps = (screens.length || 4) + ((lesson as any).questions?.length || 8);
   const progress = screens.length > 0 ? (screenIndex + 1) / totalSteps : 0;
 
+  function handleExit() {
+    router.replace("/(private)/(tabs)");
+  }
+
   function handleContinue() {
     if (isLastScreen || screens.length === 0) {
       // Dernier écran de contenu : avance le tuto en même temps qu'on passe aux questions.
       pressTarget("lesson-intro");
-      router.push({
+      router.replace({
         pathname: "/lesson",
         params: { category: categoryId, lessonId: effectiveLessonId },
       });
@@ -63,7 +67,7 @@ export default function LessonContentScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={handleExit}>
           <X color="#AFAFB8" size={26} />
         </TouchableOpacity>
 

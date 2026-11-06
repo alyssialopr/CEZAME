@@ -8,6 +8,7 @@ import {
   DBLessonOption,
   DBUnit,
   LessonProgressStatus,
+  QuestionType,
 } from '@/types/lesson';
 
 const CACHE_KEY_UNITS = (cat: string) => `@cezame_units_${cat}`;
@@ -231,6 +232,58 @@ export async function fetchCategoryUnits(
 }
 
 /**
+ * Détermine le type précis d'un exercice de façon ultra-robuste.
+ */
+function resolveQuestionType(rawExplicitType: any, rawOptions: any): QuestionType {
+  const explicit = rawExplicitType as QuestionType | undefined;
+  if (explicit === 'document') return 'document';
+  if (explicit === 'matching') return 'matching';
+  if (explicit === 'order') return 'order';
+  if (explicit === 'scam') return 'scam';
+  if (explicit === 'bucket') return 'bucket';
+  if (explicit === 'scenario') return 'scenario';
+
+  const firstElem = Array.isArray(rawOptions) ? rawOptions[0] : null;
+
+  const isScenario = Boolean(
+    (rawOptions && typeof rawOptions === 'object' && !Array.isArray(rawOptions) && (rawOptions.context !== undefined || (rawOptions.options && rawOptions.persona))) ||
+    (firstElem && typeof firstElem === 'object' && firstElem.context !== undefined)
+  );
+  if (isScenario) return 'scenario';
+
+  const isScam = Boolean(
+    (rawOptions && typeof rawOptions === 'object' && !Array.isArray(rawOptions) && (rawOptions.isScam !== undefined || rawOptions.sender !== undefined || rawOptions.channel !== undefined)) ||
+    (firstElem && typeof firstElem === 'object' && (firstElem.isScam !== undefined || firstElem.sender !== undefined))
+  );
+  if (isScam) return 'scam';
+
+  const isBucket = Boolean(
+    (rawOptions && typeof rawOptions === 'object' && !Array.isArray(rawOptions) && (rawOptions.buckets !== undefined || rawOptions.items !== undefined)) ||
+    (firstElem && typeof firstElem === 'object' && (firstElem.buckets !== undefined || firstElem.bucketId !== undefined)) ||
+    (Array.isArray(rawOptions) && rawOptions.some((it: any) => it?.bucketId !== undefined))
+  );
+  if (isBucket) return 'bucket';
+
+  const optionsArr = Array.isArray(rawOptions) ? rawOptions : [];
+  if (optionsArr[0]?.label !== undefined && optionsArr[0]?.value !== undefined) {
+    return 'document';
+  }
+  if (optionsArr[0]?.left !== undefined) {
+    return 'matching';
+  }
+  if (
+    optionsArr[0]?.id !== undefined &&
+    optionsArr[0]?.text !== undefined &&
+    optionsArr[0]?.label === undefined &&
+    optionsArr[0]?.letter === undefined
+  ) {
+    return 'order';
+  }
+
+  return explicit || 'qcm';
+}
+
+/**
  * Récupère le contenu complet d'une leçon (écrans théoriques + questions du quiz).
  */
 export async function fetchLessonDetails(
@@ -262,15 +315,26 @@ export async function fetchLessonDetails(
       ]);
 
       const screens = screensRes.data || [];
-      const questions = (questionsRes.data || []).map((q) => ({
-        id: q.id,
-        lesson_id: q.lesson_id,
-        order_index: q.order_index,
-        category: q.category,
-        prompt: q.prompt,
-        options: (Array.isArray(q.options) ? q.options : []) as DBLessonOption[],
-        explanation: q.explanation,
-      }));
+      const questions = (questionsRes.data || []).map((q) => {
+        let rawOptions: any = q.options;
+        if (typeof rawOptions === 'string') {
+          try {
+            rawOptions = JSON.parse(rawOptions);
+          } catch {}
+        }
+        const detectedType = resolveQuestionType((q as any).type, rawOptions);
+
+        return {
+          id: q.id,
+          lesson_id: q.lesson_id,
+          order_index: q.order_index,
+          type: detectedType,
+          category: q.category,
+          prompt: q.prompt,
+          options: rawOptions,
+          explanation: q.explanation,
+        };
+      });
 
       // Si la BDD a du contenu pour cette leçon, on le retourne
       if (screens.length > 0 || questions.length > 0) {
@@ -301,19 +365,41 @@ export async function fetchLessonDetails(
   }
 
   // 2. Cache local AsyncStorage
+  const targetCategory = categoryId || (lessonId.includes('_') ? lessonId.split('_')[0] : 'finance');
+  const localLesson = LESSONS[targetCategory];
+
   try {
     const cached = await AsyncStorage.getItem(CACHE_KEY_LESSON(lessonId));
     if (cached) {
-      return JSON.parse(cached);
+      const parsed: DBLessonDetails = JSON.parse(cached);
+      // Si le cache contient moins de questions que la version locale (nouveaux types d'exercices ajoutés),
+      // on ignore le cache périmé pour charger la leçon mise à jour.
+      const isCacheStale = localLesson && parsed.questions && parsed.questions.length < localLesson.questions.length;
+
+      if (!isCacheStale && parsed.questions) {
+        parsed.questions = parsed.questions.map((q) => {
+          let rawOptions: any = q.options;
+          if (typeof rawOptions === 'string') {
+            try {
+              rawOptions = JSON.parse(rawOptions);
+            } catch {}
+          }
+          const detectedType = resolveQuestionType(q.type, rawOptions);
+
+          return {
+            ...q,
+            type: detectedType,
+            options: rawOptions,
+          };
+        });
+      }
+      return parsed;
     }
   } catch {
     // ignorer
   }
 
   // 3. Fallback sur les constantes locales LESSONS
-  const targetCategory = categoryId || (lessonId.includes('_') ? lessonId.split('_')[0] : 'finance');
-  const localLesson = LESSONS[targetCategory];
-
   if (localLesson) {
     return {
       id: lessonId,
@@ -328,13 +414,24 @@ export async function fetchLessonDetails(
         body: s.body,
         tip: s.tip,
       })),
-      questions: localLesson.questions.map((q, idx) => ({
-        order_index: idx + 1,
-        category: q.category,
-        prompt: q.prompt,
-        options: q.options,
-        explanation: q.explanation,
-      })),
+      questions: localLesson.questions.map((q, idx) => {
+        let rawOptions: any = q.options;
+        if (typeof rawOptions === 'string') {
+          try {
+            rawOptions = JSON.parse(rawOptions);
+          } catch {}
+        }
+        const detectedType = resolveQuestionType(q.type, rawOptions);
+
+        return {
+          order_index: idx + 1,
+          type: detectedType,
+          category: q.category,
+          prompt: q.prompt,
+          options: rawOptions,
+          explanation: q.explanation,
+        };
+      }),
     };
   }
 

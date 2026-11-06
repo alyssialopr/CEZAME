@@ -1,13 +1,22 @@
+export type QuestionType = "qcm" | "order" | "matching" | "document" | "bucket" | "scam" | "scenario";
+
 export type LessonOption = {
-  letter: "A" | "B" | "C";
-  text: string;
+  letter?: "A" | "B" | "C" | "D";
+  text?: string;
   correct?: boolean;
+  id?: string;
+  left?: string;
+  right?: string;
+  label?: string;
+  value?: string;
+  hint?: string;
 };
 
 export type LessonQuestion = {
+  type?: QuestionType;
   category: string;
   prompt: string;
-  options: LessonOption[];
+  options: any;
   explanation: string;
 };
 
@@ -132,6 +141,116 @@ export const LESSONS: Record<string, LessonUnit> = {
         ],
         explanation: "50 % besoins, 30 % envies, 20 % épargne — un repère simple, à adapter à ta situation.",
       },
+      {
+        type: "order",
+        category: "Opposition carte bancaire",
+        prompt: "Tu ne retrouves plus ta carte bancaire. Remets dans le bon ordre tes réflexes :",
+        options: [
+          { id: "1", text: "Vérifier immédiatement les derniers paiements sur ton appli" },
+          { id: "2", text: "Faire opposition d'urgence depuis l'appli bancaire" },
+          { id: "3", text: "Contacter ta banque pour commander une nouvelle carte" },
+          { id: "4", text: "Déposer plainte en commissariat s'il s'agit d'un vol" },
+        ],
+        explanation: "L'opposition bloque immédiatement la carte pour empêcher tout débit frauduleux.",
+      },
+      {
+        type: "matching",
+        category: "Vocabulaire bancaire",
+        prompt: "Associe chaque terme financier à sa définition :",
+        options: [
+          { id: "1", left: "RIB", right: "Identifiant pour virements et salaires" },
+          { id: "2", left: "Agios", right: "Frais prélevés en cas de découvert" },
+          { id: "3", left: "Livret A", right: "Épargne disponible sans impôt" },
+          { id: "4", left: "Prélèvement", right: "Paiement récurrent qu'on peut révoquer" },
+        ],
+        explanation: "Bravo ! Ce vocabulaire est indispensable pour gérer ton compte sans mauvaises surprises.",
+      },
+      {
+        type: "document",
+        category: "Bulletin de paie",
+        prompt: "Sur cette fiche de paie, quelle ligne indique la somme qui arrive réellement sur ton compte bancaire ?",
+        options: [
+          { id: "1", label: "Salaire brut", value: "2 150,00 €" },
+          { id: "2", label: "Cotisations salariales", value: "- 473,00 €" },
+          { id: "3", label: "Net imposable", value: "1 720,00 €" },
+          { id: "4", label: "Net payé en euros (virement)", value: "1 677,00 €", correct: true },
+        ],
+        explanation: "Le 'Net payé en euros' est le montant viré sur ton compte bancaire, une fois les cotisations et l'impôt à la source déduits !",
+      },
+      {
+        type: "bucket",
+        category: "La règle 50/30/20",
+        prompt: "Classe chaque dépense dans sa catégorie budgétaire correspondante :",
+        options: {
+          buckets: [
+            { id: "b1", label: "Besoins (50%)", color: "#3B82F6" },
+            { id: "b2", label: "Envies (30%)", color: "#8B5CF6" },
+            { id: "b3", label: "Épargne (20%)", color: "#10B981" },
+          ],
+          items: [
+            { id: "1", text: "Loyer et électricité", bucketId: "b1" },
+            { id: "2", text: "Sorties resto & cinéma", bucketId: "b2" },
+            { id: "3", text: "Virement sur Livret A", bucketId: "b3" },
+            { id: "4", text: "Courses alimentaires", bucketId: "b1" },
+          ],
+        },
+        explanation: "50% pour ce qui est vital (loyer, courses), 30% pour les plaisirs, 20% pour te bâtir une sécurité financière !",
+      },
+      {
+        type: "scam",
+        category: "Sécurité bancaire",
+        prompt: "Tu reçois ce SMS d'alerte bancaire. D'après toi, arnaque ou authentique ?",
+        options: {
+          sender: "Alerte-Banque (+33 7 45 12 98 23)",
+          channel: "sms",
+          message: "ALERTE SÉCURITÉ : Un paiement suspect de 489,00 € a été initié. Si vous n'êtes pas à l'origine de cette opération, annulez-la immédiatement sur https://espace-securite-banque-annulation.com",
+          isScam: true,
+          redFlags: [
+            "Une banque ne demande JAMAIS d'annuler une opération via un lien par SMS",
+            "Le message provient d'un numéro de portable individuel (07)",
+            "L'adresse URL mène vers un faux site pirate non officiel"
+          ],
+        },
+        explanation: "C'est l'arnaque au faux conseiller / faux débit. Les banques ne vous demandent JAMAIS de cliquer sur un lien pour annuler une fraude.",
+      },
+      {
+        type: "scenario",
+        category: "Cas pratique",
+        prompt: "Aide Maxime à résoudre son imprévu financier de fin de mois.",
+        options: {
+          context: "Maxime, 21 ans, est étudiant et apprenti. Il lui reste 35 € sur son compte en banque alors que sa paie tombe dans 10 jours. Sa machine à laver vient de lâcher et une facture d'électricité de 55 € arrive dans 3 jours.",
+          persona: {
+            name: "Maxime",
+            role: "Apprenti 21 ans",
+          },
+          keyFacts: [
+            { label: "Solde compte", value: "35 €" },
+            { label: "Facture énergie", value: "55 €" },
+            { label: "Délai paie", value: "10 jours" },
+          ],
+          options: [
+            {
+              id: "opt1",
+              text: "Demander un report d'échéance au fournisseur et utiliser une laverie le temps d'être payé",
+              correct: true,
+              consequence: "Super réflexe ! Les fournisseurs d'énergie décalent facilement un prélèvement sans frais si on prévient avant, et la laverie dépanne à moindre coût.",
+            },
+            {
+              id: "opt2",
+              text: "Laisser le prélèvement passer et acheter une machine neuve à crédit en magasin",
+              correct: false,
+              consequence: "Attention : le prélèvement sera rejeté avec environ 20 € de frais bancaires d'agios, et le crédit aggravera le budget du mois prochain.",
+            },
+            {
+              id: "opt3",
+              text: "Souscrire un mini-prêt express à 20% d'intérêts sur Internet",
+              correct: false,
+              consequence: "Piège coûteux : les taux de ces crédits rapides sont disproportionnés et créent un engrenage de dettes.",
+            },
+          ],
+        },
+        explanation: "Anticiper et communiquer avec ses créanciers avant la date d'échéance évite les frais de rejet et l'endettement.",
+      },
     ],
   },
   sante: {
@@ -243,6 +362,115 @@ export const LESSONS: Record<string, LessonUnit> = {
         explanation:
           "La carte Vitale ne marche qu'en France. La carte européenne d'assurance maladie est gratuite — demande-la 15 jours avant.",
       },
+      {
+        type: "order",
+        category: "Le parcours de soins",
+        prompt: "Remets dans le bon ordre les étapes pour te soigner et être remboursé :",
+        options: [
+          { id: "1", text: "Prendre RDV avec ton médecin traitant déclaré" },
+          { id: "2", text: "Présenter ta carte Vitale en consultation" },
+          { id: "3", text: "Régler la consultation ou bénéficier du tiers-payant" },
+          { id: "4", text: "Remboursement automatique Sécu puis Mutuelle" },
+        ],
+        explanation: "En passant par ton médecin traitant avec ta carte Vitale, la télétransmission est automatique et tu es remboursé au tarif maximal !",
+      },
+      {
+        type: "matching",
+        category: "Les démarches de santé",
+        prompt: "Associe chaque document ou organisme à son rôle exact :",
+        options: [
+          { id: "1", left: "Carte Vitale", right: "Télétransmission des soins" },
+          { id: "2", left: "Mutuelle", right: "Complète le remboursement Sécu" },
+          { id: "3", left: "Ameli.fr", right: "Gérer ses attestations et droits" },
+          { id: "4", left: "Le 15", right: "Numéro du SAMU (urgences)" },
+        ],
+        explanation: "Bravo ! Tu connais parfaitement le rôle de chaque acteur de ta santé.",
+      },
+      {
+        type: "document",
+        category: "Ordonnance médicale",
+        prompt: "Sur cette ordonnance, quelle mention indique la durée maximale pour aller chercher tes médicaments en pharmacie ?",
+        options: [
+          { id: "1", label: "Prescripteur", value: "Dr. Martin — Généraliste" },
+          { id: "2", label: "Délai 1ère délivrance", value: "Valable 3 mois max", correct: true },
+          { id: "3", label: "Traitement", value: "Amoxicilline 500mg (6 jours)" },
+          { id: "4", label: "Posologie", value: "1 gélule matin et soir" },
+        ],
+        explanation: "Une ordonnance doit être présentée en pharmacie dans un délai de 3 mois suivant sa prescription pour la première délivrance.",
+      },
+      {
+        type: "scam",
+        category: "Arnaque Carte Vitale",
+        prompt: "Tu reçois ce SMS sur ton téléphone. D'après toi, arnaque ou message authentique ?",
+        options: {
+          sender: "Assurance-Maladie (+33 6 88 19 02 43)",
+          channel: "sms",
+          message: "Assurance Maladie : Votre nouvelle carte Vitale est prête. Veuillez confirmer votre adresse postale et vous acquitter des frais d'envoi (2,60 €) : https://ameli-portail-renouvellement.fr",
+          isScam: true,
+          redFlags: [
+            "La carte Vitale est 100% gratuite (l'Assurance Maladie ne facture JAMAIS d'envoi)",
+            "L'Assurance Maladie n'envoie JAMAIS de SMS depuis un numéro mobile en 06/07",
+            "L'adresse officielle est uniquement ameli.fr"
+          ],
+        },
+        explanation: "La carte Vitale est toujours 100% gratuite. Tout SMS réclamant des frais d'envoi est une tentative d'escroquerie (phishing).",
+      },
+      {
+        type: "bucket",
+        category: "Où se soigner ?",
+        prompt: "Classe chaque situation médicale vers le bon lieu de prise en charge :",
+        options: {
+          buckets: [
+            { id: "b1", label: "Médecin traitant", color: "#3B82F6" },
+            { id: "b2", label: "Pharmacie", color: "#10B981" },
+            { id: "b3", label: "SAMU / Urgences (15)", color: "#EF4444" },
+          ],
+          items: [
+            { id: "1", text: "Fièvre et toux depuis 2 jours", bucketId: "b1" },
+            { id: "2", text: "Douleur brutale dans la poitrine", bucketId: "b3" },
+            { id: "3", text: "Conseil pour petite brûlure au doigt", bucketId: "b2" },
+            { id: "4", text: "Certificat médical pour le sport", bucketId: "b1" },
+          ],
+        },
+        explanation: "Le médecin traitant pour le suivi courant, la pharmacie pour les petits bobos et conseils, le 15 uniquement pour les urgences vitales !",
+      },
+      {
+        type: "scenario",
+        category: "Cas pratique santé",
+        prompt: "Aide Sarah à choisir la bonne démarche pour sa consultation médicale.",
+        options: {
+          context: "Sarah a une forte fièvre et une toux persistante depuis 48h. Elle vient d'emménager dans une nouvelle ville pour ses études et n'a pas encore de médecin traitant déclaré ici.",
+          persona: {
+            name: "Sarah",
+            role: "Étudiante 19 ans",
+          },
+          keyFacts: [
+            { label: "Symptôme", value: "Fièvre 39°C" },
+            { label: "Statut", value: "Nouveau déménagement" },
+          ],
+          options: [
+            {
+              id: "s1",
+              text: "Prendre RDV chez un généraliste de secteur 1 proche et lui demander d'être son médecin traitant déclaré",
+              correct: true,
+              consequence: "La démarche idéale ! Le médecin peut télétransmettre la déclaration directement avec la carte Vitale, garantissant 70% de remboursement Sécu.",
+            },
+            {
+              id: "s2",
+              text: "Aller directement aux urgences de l'hôpital public pour une consultation rapide",
+              correct: false,
+              consequence: "Mauvais réflexe : les urgences sont réservées aux détresses vitales. Tu risques d'attendre 6 à 8 heures et d'encombrer le service.",
+            },
+            {
+              id: "s3",
+              text: "Attendre plusieurs semaines de rentrer chez ses parents sans consulter",
+              correct: false,
+              consequence: "Dangereux pour la santé : une forte fièvre persistante nécessite un avis médical rapide pour éviter une surinfection.",
+            },
+          ],
+        },
+        explanation: "Déclarer un nouveau médecin traitant lors d'une consultation de proximité permet d'être soigné rapidement et remboursé au maximum.",
+      },
     ],
   },
   administration: {
@@ -353,6 +581,42 @@ export const LESSONS: Record<string, LessonUnit> = {
         ],
         explanation:
           "L'administration peut te les demander plusieurs années après. Et ils servent de justificatif de revenus.",
+      },
+      {
+        type: "bucket",
+        category: "À quel organisme s'adresser ?",
+        prompt: "Associe chaque démarche administrative à son organisme officiel compétent :",
+        options: {
+          buckets: [
+            { id: "b1", label: "CAF", color: "#3B82F6" },
+            { id: "b2", label: "Impôts (DGFIP)", color: "#F59E0B" },
+            { id: "b3", label: "Assurance Maladie", color: "#10B981" },
+          ],
+          items: [
+            { id: "1", text: "Demande d'aide au logement (APL)", bucketId: "b1" },
+            { id: "2", text: "Déclaration annuelle de revenus", bucketId: "b2" },
+            { id: "3", text: "Attestation de droits et carte Vitale", bucketId: "b3" },
+            { id: "4", text: "Demande de Prime d'activité", bucketId: "b1" },
+          ],
+        },
+        explanation: "La CAF verse les aides et allocations, les Impôts gèrent tes déclarations de revenus, et l'Assurance Maladie s'occupe de ta couverture santé !",
+      },
+      {
+        type: "scam",
+        category: "Fausse amende ANTAI",
+        prompt: "Tu reçois ce SMS concernant une contravention impayée. Arnaque ou vrai avis ?",
+        options: {
+          sender: "INFO-ANTAI (+33 7 81 22 90 14)",
+          channel: "sms",
+          message: "ANTAI : Vous avez un retard de paiement pour une infraction de 35,00 €. Dernier avis avant majoration à 135,00 € : https://antai-gouv-amende-dossier.fr",
+          isScam: true,
+          redFlags: [
+            "L'ANTAI n'envoie JAMAIS de SMS pour réclamer le paiement direct d'une amende",
+            "Les avis de contravention arrivent exclusivement par courrier postal",
+            "L'adresse officielle pour payer ses amendes est amendes.gouv.fr uniquement"
+          ],
+        },
+        explanation: "L'escroquerie à la fausse amende par SMS est très fréquente. L'ANTAI ne contacte jamais les usagers par SMS pour réclamer un paiement en ligne.",
       },
     ],
   },
@@ -468,6 +732,90 @@ export const LESSONS: Record<string, LessonUnit> = {
         ],
         explanation:
           "Visale (Action Logement) se porte garant gratuitement pour les moins de 31 ans. Demande sur visale.fr.",
+      },
+      {
+        type: "document",
+        category: "Contrat de bail",
+        prompt: "Touche la clause illégale (abusive) figurant sur ce contrat de bail :",
+        options: [
+          { id: "1", label: "Loyer mensuel HC", value: "580,00 €" },
+          { id: "2", label: "Charges locatives", value: "65,00 € (provisions)" },
+          { id: "3", label: "Mode de règlement", value: "Prélèvement automatique imposé", correct: true },
+          { id: "4", label: "Dépôt de garantie", value: "580,00 € (1 mois HC)" },
+        ],
+        explanation: "La loi interdit formellement à un propriétaire d'imposer le prélèvement automatique comme unique mode de paiement. Le locataire conserve le droit de payer par virement ou chèque.",
+      },
+      {
+        type: "bucket",
+        category: "Réparations locatives",
+        prompt: "Qui doit payer pour chacune de ces réparations dans le logement ?",
+        options: {
+          buckets: [
+            { id: "b1", label: "Locataire", color: "#3B82F6" },
+            { id: "b2", label: "Propriétaire", color: "#8B5CF6" },
+          ],
+          items: [
+            { id: "1", text: "Remplacement ampoules et joints usés", bucketId: "b1" },
+            { id: "2", text: "Remplacement du chauffe-eau vétuste", bucketId: "b2" },
+            { id: "3", text: "Réparation toiture suite à fuite", bucketId: "b2" },
+            { id: "4", text: "Entretien courant des poignées et portes", bucketId: "b1" },
+          ],
+        },
+        explanation: "L'entretien courant et les petites réparations sont pour le locataire ; les gros travaux et la vétusté sont à la charge exclusive du propriétaire.",
+      },
+      {
+        type: "scam",
+        category: "Arnaque à la location",
+        prompt: "Tu cherches un appart et reçois cet e-mail. Est-ce une arnaque ou une vraie opportunité ?",
+        options: {
+          sender: "Propriétaire SeLoger (location.paris11@outlook.com)",
+          channel: "email",
+          message: "Bonjour, l'appartement est toujours disponible (550€ charges comprises en plein centre). Étant actuellement en déplacement professionnel à l'étranger, je vous demande d'envoyer la caution par coupon Transcash/PCS pour bloquer la visite demain.",
+          isScam: true,
+          redFlags: [
+            "La loi interdit formellement de demander de l'argent AVANT la visite et la signature du bail",
+            "L'usage de coupons prépayés (PCS, Transcash, Neosurf) est le procédé typique des escrocs",
+            "L'excuse du 'propriétaire en déplacement à l'étranger' est un classique absolu du phishing"
+          ],
+        },
+        explanation: "Ne versez JAMAIS d'argent ni de caution avant d'avoir visité le logement et signé un bail en bonne et due forme !",
+      },
+      {
+        type: "scenario",
+        category: "Cas pratique logement",
+        prompt: "Aide Chloé à sécuriser sa candidature pour son premier studio.",
+        options: {
+          context: "Chloé a repéré une annonce séduisante. Le propriétaire lui demande d'envoyer par e-mail son dossier complet (CNI, avis d'imposition de ses parents, fiches de paie, RIB) avant même de confirmer la visite.",
+          persona: {
+            name: "Chloé",
+            role: "Étudiante en recherche",
+          },
+          keyFacts: [
+            { label: "Demande", value: "Dossier complet par mail" },
+            { label: "Étape", value: "Avant la visite" },
+          ],
+          options: [
+            {
+              id: "c1",
+              text: "Utiliser le service public gratuit DossierFacile pour filigraner tous ses documents avec la mention 'Location uniquement'",
+              correct: true,
+              consequence: "Parfait ! Le filigrane officiel empêche les escrocs d'utiliser tes pièces pour contracter des crédits ou ouvrir des lignes téléphoniques à ton nom.",
+            },
+            {
+              id: "c2",
+              text: "Envoyer tous les scans originaux haute résolution sans protection",
+              correct: false,
+              consequence: "Gros danger : les documents non filigranés sont la cible numéro un des réseaux d'usurpation d'identité sur les sites de petites annonces.",
+            },
+            {
+              id: "c3",
+              text: "Ajouter en plus son code confidentiel bancaire pour prouver sa solvabilité",
+              correct: false,
+              consequence: "Erreur fatale : un propriétaire n'a JAMAIS le droit de demander de code bancaire ni d'extrait de compte détaillé.",
+            },
+          ],
+        },
+        explanation: "Toujours protéger ses justificatifs personnels avec DossierFacile ou un filigrane indélébile avant de les transmettre.",
       },
     ],
   },

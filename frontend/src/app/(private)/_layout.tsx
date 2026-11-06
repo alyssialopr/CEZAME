@@ -26,6 +26,7 @@ export default function PrivateLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="lesson-content" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="lesson" options={{ presentation: 'fullScreenModal' }} />
     </Stack>
   );
