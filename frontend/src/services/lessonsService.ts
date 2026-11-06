@@ -230,17 +230,7 @@ export async function fetchCategoryUnits(
     const cached = await AsyncStorage.getItem(CACHE_KEY_UNITS(categoryId));
     if (cached) {
       const units: DBUnit[] = JSON.parse(cached);
-      const cleanUnits = units
-        .map((u) => ({
-          ...u,
-          lessons: u.lessons.filter(
-            (l) => (l as any).status !== 'draft' && (l as any).status !== 'archived'
-          ),
-        }))
-        .filter((u) => u.lessons.length > 0);
-      if (cleanUnits.length > 0) {
-        return cleanUnits;
-      }
+      return units;
     }
   } catch {
     // ignorer
