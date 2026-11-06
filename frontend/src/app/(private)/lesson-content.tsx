@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { Heart, X } from "lucide-react-native";
 import { useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
@@ -11,6 +11,9 @@ import { LESSONS } from "@/constants/lessons";
 import { useLessonDetails } from "@/hooks/useLessons";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useTutorial } from "@/providers/TutorialProvider";
+import { useHearts } from "@/providers/HeartsProvider";
+import { tracker } from "@/services/trackerService";
+import { useEffect } from "react";
 
 export default function LessonContentScreen() {
   const router = useRouter();
@@ -20,6 +23,7 @@ export default function LessonContentScreen() {
   }>();
   const [screenIndex, setScreenIndex] = useState(0);
   const insets = useSafeAreaInsets();
+  const { hearts } = useHearts();
 
   const { pressTarget } = useTutorial();
   const continueRef = useRef<ViewInstance>(null);
@@ -44,23 +48,46 @@ export default function LessonContentScreen() {
   const screens = lesson.screens || [];
   const screen = screens[screenIndex];
   const isLastScreen = screens.length === 0 || screenIndex === screens.length - 1;
-  const totalSteps = (screens.length || 4) + ((lesson as any).questions?.length || 8);
-  const progress = screens.length > 0 ? (screenIndex + 1) / totalSteps : 0;
+  const questionsCount = (lesson as any).questions?.length || 4;
+  const totalSteps = (screens.length || 1) + questionsCount;
+  const progress = Math.max(0.06, (screenIndex + 0.3) / totalSteps);
+
+  useEffect(() => {
+    tracker.trackLessonEvent('lesson_started', effectiveLessonId, {
+      categoryId,
+      title: lesson?.title,
+      totalScreens: screens.length,
+    });
+  }, [effectiveLessonId]);
 
   function handleExit() {
+    tracker.trackLessonEvent('lesson_abandoned', effectiveLessonId, {
+      categoryId,
+      stage: 'theory',
+      screenIndex,
+    });
     router.replace("/(private)/(tabs)");
   }
 
   function handleContinue() {
     if (isLastScreen || screens.length === 0) {
-      // Dernier écran de contenu : avance le tuto en même temps qu'on passe aux questions.
       pressTarget("lesson-intro");
+      // Événement critique : passage de la théorie vers le Quiz
+      tracker.trackLessonEvent('quiz_started', effectiveLessonId, {
+        categoryId,
+        screensCompleted: screens.length,
+      });
       router.replace({
         pathname: "/lesson",
         params: { category: categoryId, lessonId: effectiveLessonId },
       });
       return;
     }
+    tracker.trackLessonEvent('screen_read', effectiveLessonId, {
+      categoryId,
+      screenIndex,
+      screenTitle: screen?.title,
+    });
     setScreenIndex((i) => i + 1);
   }
 
@@ -76,8 +103,12 @@ export default function LessonContentScreen() {
         </View>
 
         <View style={styles.hearts}>
-          <Heart color="#FF4B6E" size={20} />
-          <Text style={styles.heartsText}>5</Text>
+          <Heart
+            color={hearts === 0 ? "#AFAFB8" : "#FF4B6E"}
+            fill={hearts === 0 ? "#E5E5E5" : "#FF4B6E"}
+            size={20}
+          />
+          <Text style={[styles.heartsText, hearts === 0 && { color: "#AFAFB8" }]}>{hearts}</Text>
         </View>
       </View>
 
@@ -117,6 +148,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FBFAF8",
     paddingHorizontal: 20,
+    maxWidth: 440,
+    width: "100%",
+    alignSelf: "center",
   },
   header: {
     flexDirection: "row",
@@ -135,6 +169,7 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 6,
     backgroundColor: "#A8EA73",
+    ...(Platform.OS === 'web' ? ({ transition: "width 0.35s ease-out" } as any) : {}),
   },
   hearts: {
     flexDirection: "row",

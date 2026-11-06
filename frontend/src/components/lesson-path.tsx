@@ -9,8 +9,11 @@ import { useRouter } from "expo-router";
 import { Lock, Star } from "lucide-react-native";
 import { drawUnitReward, UnitReward } from "@/constants/categoryRewards";
 import { useRewards } from "@/hooks/useRewards";
+import { useHearts } from "@/providers/HeartsProvider";
 import { RewardModal } from "@/components/reward-modal";
+import { GameOverModal } from "@/components/GameOverModal";
 import { UnitRewardChest } from "@/components/unit-reward-chest";
+import { tracker } from "@/services/trackerService";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
 
@@ -332,6 +335,8 @@ function AnimatedMascotCallout({
             source={getMascotSource(mascotName, categoryId)}
             style={styles.interstitialMascotImg}
             contentFit="contain"
+            priority="high"
+            cachePolicy="memory-disk"
           />
         </Animated.View>
       )}
@@ -367,6 +372,8 @@ function AnimatedMascotCallout({
             source={getMascotSource(mascotName, categoryId)}
             style={styles.interstitialMascotImg}
             contentFit="contain"
+            priority="high"
+            cachePolicy="memory-disk"
           />
         </Animated.View>
       )}
@@ -384,7 +391,8 @@ export function LessonPath({
   const router = useRouter();
   const { pressTarget } = useTutorial();
   const { data: units } = useCategoryUnits(category.id);
-  const { isChestClaimed, claimChest } = useRewards();
+  const { isChestClaimed, claimChest, gems } = useRewards();
+  const { hearts, refillWithGems } = useHearts();
 
   // État de la modale de récompense ouverte
   const [activeRewardModal, setActiveRewardModal] = useState<{
@@ -393,13 +401,26 @@ export function LessonPath({
     reward: UnitReward;
   } | null>(null);
 
+  // État de la modale de plus de vies
+  const [isOutOfHeartsModalOpen, setIsOutOfHeartsModalOpen] = useState(false);
+
   // Détermination des couleurs de la catégorie
   const accentColor = category.borderColor || "#8B5CF6";
   const mainColor = category.color || "#8B5CF6";
 
   const handleStartLesson = (lesson: DBLesson) => {
+    // Si aucun cœur restant, bloquer et afficher la modale
+    if (hearts <= 0) {
+      setIsOutOfHeartsModalOpen(true);
+      return;
+    }
+
     // Avance le tutoriel si actif et lance la leçon
     pressTarget("lesson-node");
+    tracker.trackLessonEvent('lesson_opened', lesson.id, {
+      categoryId: category.id,
+      title: lesson.title,
+    });
     router.push({
       pathname: "/lesson-content",
       params: {
@@ -549,6 +570,19 @@ export function LessonPath({
             setActiveRewardModal(null);
           }
         }}
+      />
+
+      {/* MODALE DE VIES ÉPUISÉES AU CLIC SUR UNE LEÇON */}
+      <GameOverModal
+        visible={isOutOfHeartsModalOpen}
+        gems={gems}
+        onRefillWithGems={async () => {
+          const success = await refillWithGems();
+          if (success) {
+            setIsOutOfHeartsModalOpen(false);
+          }
+        }}
+        onExit={() => setIsOutOfHeartsModalOpen(false)}
       />
     </>
   );
