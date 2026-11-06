@@ -1,0 +1,17 @@
+{
+  "name": "cezame-e2e",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:mobile": "playwright test --project=mobile-web",
+    "test:backoffice": "playwright test --project=backoffice",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56",
+    "@types/node": "^22.20.5",
+    "serve-handler": "^6.1.7",
+    "typescript": "^5.9.3"
+  }
+}

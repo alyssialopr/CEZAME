@@ -72,6 +72,7 @@ export default function CategoriesScreen() {
             key={id}
             ref={index === 0 ? firstCardRef : undefined}
             style={[styles.card, { backgroundColor: color, borderColor: borderColor || color }]}
+            testID={`category-card-${id}`}
             onPress={() => handleCategorySelect(id)}>
             <Icon color={borderColor} size={120} style={styles.cardWatermark} strokeWidth={3} />
 
