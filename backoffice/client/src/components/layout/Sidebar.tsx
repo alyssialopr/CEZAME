@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   History,
   LogOut,
-  Sparkles,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge.js';
 
@@ -30,13 +29,15 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0">
       {/* Brand Header */}
-      <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#607FE8] to-[#8FA6FF] flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-          <Sparkles size={22} className="animate-pulse" />
-        </div>
+      <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+        <img
+          src="/logo.png"
+          alt="CEZAME Logo"
+          className="w-11 h-11 object-contain drop-shadow-sm rounded-xl"
+        />
         <div>
-          <h1 className="font-extrabold text-lg text-slate-900 tracking-tight">CEZAME</h1>
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+          <h1 className="font-extrabold text-lg text-slate-900 tracking-tight leading-tight">CEZAME</h1>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Backoffice Admin
           </p>
         </div>

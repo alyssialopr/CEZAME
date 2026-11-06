@@ -57,13 +57,20 @@ router.get('/', requireAuth, async (_req: AuthenticatedRequest, res) => {
           .eq('user_id', u.id)
           .eq('status', 'completed');
 
+        const isTester = Boolean(
+          u.user_metadata?.is_test_user ||
+          u.email?.includes('cezame-test.app') ||
+          u.email?.includes('test.cezame.app')
+        );
+
         return {
           id: u.id,
           email: u.email,
           created_at: u.created_at,
           last_sign_in_at: u.last_sign_in_at,
           username: u.user_metadata?.username || u.email?.split('@')[0],
-          role: roleMap.get(u.id) || 'user',
+          role: roleMap.get(u.id) || (isTester ? 'tester' : 'user'),
+          isTester,
           completedLessonsCount: completedCount || 0,
         };
       })

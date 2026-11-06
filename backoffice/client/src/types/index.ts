@@ -142,6 +142,7 @@ export interface MobileUser {
   role: string;
   completedLessonsCount: number;
   isFallback?: boolean;
+  isTester?: boolean;
 }
 
 export interface AuditLog {

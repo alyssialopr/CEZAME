@@ -174,6 +174,8 @@ export const Users: React.FC = () => {
                             ? 'purple'
                             : user.role === 'admin'
                             ? 'primary'
+                            : user.isTester || user.role === 'tester'
+                            ? 'success'
                             : 'gray'
                         }
                       >
@@ -181,6 +183,8 @@ export const Users: React.FC = () => {
                           ? 'Superadmin'
                           : user.role === 'admin'
                           ? 'Admin'
+                          : user.isTester || user.role === 'tester'
+                          ? '🧪 Testeur'
                           : 'Apprenant'}
                       </Badge>
                     </td>

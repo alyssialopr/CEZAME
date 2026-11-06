@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.js';
 import api from '../services/api.js';
-import { Lock, Mail, Sparkles, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Lock, Mail, ShieldAlert, CheckCircle } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -81,9 +81,11 @@ export const Login: React.FC = () => {
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 border border-slate-100">
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#607FE8] to-[#8FA6FF] items-center justify-center text-white shadow-lg shadow-blue-500/30 mb-3">
-            <Sparkles size={28} />
-          </div>
+          <img
+            src="/logo.png"
+            alt="CEZAME Logo"
+            className="w-24 h-24 object-contain mx-auto mb-3 drop-shadow-md rounded-2xl"
+          />
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">CEZAME Backoffice</h1>
           <p className="text-xs text-slate-500 mt-1 font-medium">
             Accès réservé aux administrateurs autorisés
