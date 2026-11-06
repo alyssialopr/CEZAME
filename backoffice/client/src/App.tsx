@@ -12,6 +12,7 @@ import { LessonEditor } from './pages/LessonEditor.js';
 import { Users } from './pages/Users.js';
 import { Admins } from './pages/Admins.js';
 import { AuditLogs } from './pages/AuditLogs.js';
+import { ActivityFeed } from './pages/ActivityFeed.js';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -57,6 +58,7 @@ export const App: React.FC = () => {
             <Route path="lessons/new" element={<LessonEditor />} />
             <Route path="lessons/:id" element={<LessonEditor />} />
             <Route path="users" element={<Users />} />
+            <Route path="activity" element={<ActivityFeed />} />
             <Route path="admins" element={<Admins />} />
             <Route path="audit-logs" element={<AuditLogs />} />
           </Route>

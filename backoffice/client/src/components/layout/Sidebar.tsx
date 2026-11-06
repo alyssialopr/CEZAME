@@ -6,6 +6,7 @@ import {
   Layers,
   BookOpen,
   Users,
+  Activity,
   ShieldCheck,
   History,
   LogOut,
@@ -21,6 +22,7 @@ export const Sidebar: React.FC = () => {
     { to: '/categories', label: 'Catégories & Unités', icon: Layers },
     { to: '/lessons', label: 'Leçons & Quiz', icon: BookOpen },
     { to: '/users', label: 'Utilisateurs', icon: Users },
+    { to: '/activity', label: "Journal d'Activité", icon: Activity },
     ...(isSuperadmin ? [{ to: '/admins', label: 'Administrateurs', icon: ShieldCheck }] : []),
     { to: '/audit-logs', label: 'Journal d’Audit', icon: History },
   ];

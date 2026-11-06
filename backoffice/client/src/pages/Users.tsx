@@ -11,6 +11,9 @@ import {
   Award,
   Calendar,
   AlertCircle,
+  Activity,
+  Smartphone,
+  BookOpen,
 } from 'lucide-react';
 import { Badge } from '../components/ui/Badge.js';
 
@@ -23,6 +26,8 @@ export const Users: React.FC = () => {
   // Modal Détails
   const [detailsUser, setDetailsUser] = useState<any | null>(null);
   const [userProgress, setUserProgress] = useState<any[]>([]);
+  const [userEvents, setUserEvents] = useState<any[]>([]);
+  const [modalTab, setModalTab] = useState<'progress' | 'activity'>('progress');
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
@@ -54,9 +59,14 @@ export const Users: React.FC = () => {
     setDetailsUser(user);
     setDetailsModalOpen(true);
     setDetailsLoading(true);
+    setModalTab('progress');
     try {
-      const res = await api.get(`/users/${user.id}`);
-      setUserProgress(res.data.progress || []);
+      const [pRes, aRes] = await Promise.all([
+        api.get(`/users/${user.id}`),
+        api.get(`/activity/users/${user.id}`).catch(() => ({ data: { events: [] } })),
+      ]);
+      setUserProgress(pRes.data.progress || []);
+      setUserEvents(aRes.data.events || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -225,60 +235,134 @@ export const Users: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL DÉTAILS PROGRESSION */}
+      {/* MODAL DÉTAILS PROGRESSION & ACTIVITÉ */}
       <Modal
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
-        title={`Progression de ${detailsUser?.username || detailsUser?.email}`}
-        maxWidth="lg"
+        title={`Fiche de ${detailsUser?.username || detailsUser?.email}`}
+        maxWidth="xl"
       >
         <div className="space-y-4">
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between text-xs">
             <div>
               <p className="font-bold text-slate-900">{detailsUser?.email}</p>
-              <p className="text-slate-500">Identifiant : {detailsUser?.id}</p>
+              <p className="text-slate-500 font-mono text-[11px]">ID : {detailsUser?.id}</p>
             </div>
-            <Badge variant="primary">{userProgress.length} leçons suivies</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="primary">{userProgress.length} leçons suivies</Badge>
+              <Badge variant="purple">{userEvents.length} actions tracées</Badge>
+            </div>
           </div>
 
-          <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-            Historique des Leçons
-          </h4>
+          {/* Onglets */}
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <button
+              type="button"
+              onClick={() => setModalTab('progress')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                modalTab === 'progress'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <BookOpen size={14} />
+              <span>Progression des Cours ({userProgress.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setModalTab('activity')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                modalTab === 'activity'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Activity size={14} />
+              <span>Journal d'Activité ({userEvents.length})</span>
+            </button>
+          </div>
 
           {detailsLoading ? (
-            <p className="text-xs text-slate-400 py-4 text-center">Chargement de la progression...</p>
-          ) : userProgress.length > 0 ? (
-            <div className="space-y-2 max-h-72 overflow-y-auto">
-              {userProgress.map((p, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <p className="font-bold text-slate-900">
-                      {p.lessons?.title || 'Leçon sans titre'}
-                    </p>
-                    <span className="text-[10px] text-slate-400">
-                      Catégorie : {p.lessons?.category_id} • Récompense : {p.lessons?.xp_reward} XP
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant={p.status === 'completed' ? 'success' : 'warning'}>
-                      {p.status === 'completed' ? 'Complétée' : p.status}
-                    </Badge>
-                    {p.completed_at && (
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        Le {new Date(p.completed_at).toLocaleDateString('fr-FR')}
+            <p className="text-xs text-slate-400 py-8 text-center">Chargement des données...</p>
+          ) : modalTab === 'progress' ? (
+            userProgress.length > 0 ? (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {userProgress.map((p, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between text-xs"
+                  >
+                    <div>
+                      <p className="font-bold text-slate-900">
+                        {p.lessons?.title || 'Leçon sans titre'}
                       </p>
-                    )}
+                      <span className="text-[10px] text-slate-400">
+                        Catégorie : {p.lessons?.category_id} • Récompense : {p.lessons?.xp_reward} XP
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant={p.status === 'completed' ? 'success' : 'warning'}>
+                        {p.status === 'completed' ? 'Complétée' : p.status}
+                      </Badge>
+                      {p.completed_at && (
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Le {new Date(p.completed_at).toLocaleDateString('fr-FR')}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 py-6 text-center">
+                Cet utilisateur n'a pas encore commencé de leçon sur l'application.
+              </p>
+            )
           ) : (
-            <p className="text-xs text-slate-400 py-6 text-center">
-              Cet utilisateur n'a pas encore commencé de leçon sur l'application.
-            </p>
+            /* ONGLET ACTIVITÉ (Timeline façon Customer.io) */
+            userEvents.length > 0 ? (
+              <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                {userEvents.map((ev: any) => (
+                  <div
+                    key={ev.id}
+                    className="p-3 bg-white border border-slate-200 rounded-xl flex items-start justify-between text-xs gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">{ev.event_name}</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-700">
+                          {ev.event_type}
+                        </span>
+                        {ev.screen_name && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                            <Smartphone size={10} />
+                            {ev.screen_name}
+                          </span>
+                        )}
+                      </div>
+                      {ev.properties && Object.keys(ev.properties).length > 0 && (
+                        <p className="font-mono text-[10px] text-slate-500 max-w-md truncate">
+                          {JSON.stringify(ev.properties)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[11px] text-slate-500 font-medium">
+                        {new Date(ev.created_at).toLocaleDateString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 py-6 text-center">
+                Aucune interaction ou événement enregistré pour cet utilisateur pour le moment.
+              </p>
+            )
           )}
 
           <div className="flex justify-end pt-3 border-t border-slate-100">

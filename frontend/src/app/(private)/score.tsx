@@ -5,12 +5,19 @@ import { StyleSheet, Text, TouchableOpacity, View, Dimensions } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import ConfettiCannon from "react-native-confetti-cannon";
 import { useProgress } from "@/hooks/useProgress";
+import { tracker } from "@/services/trackerService";
+import { useEffect } from "react";
 
 export default function ScoreScreen() {
   const router = useRouter();
   const { data: progress } = useProgress();
 
+  useEffect(() => {
+    tracker.track('score_viewed', { streak: progress?.streak || 0 });
+  }, []);
+
   function handleFinish() {
+    tracker.trackClick('score_finish_button');
     router.dismissTo("/");
   }
 

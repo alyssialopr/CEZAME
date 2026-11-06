@@ -8,6 +8,7 @@ import adminsRoutes from './routes/admins.routes.js';
 import contentRoutes from './routes/content.routes.js';
 import importExportRoutes from './routes/import-export.routes.js';
 import auditRoutes from './routes/audit.routes.js';
+import activityRoutes from './routes/activity.routes.js';
 import { hasServiceRoleKey } from './config/supabase.js';
 
 dotenv.config();
@@ -46,6 +47,7 @@ app.use('/api/admins', adminsRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/import-export', importExportRoutes);
 app.use('/api/audit-logs', auditRoutes);
+app.use('/api/activity', activityRoutes);
 
 // Statut de santé du serveur
 app.get('/api/health', (_req, res) => {
