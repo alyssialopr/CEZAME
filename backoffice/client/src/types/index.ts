@@ -41,19 +41,78 @@ export interface LessonScreen {
   created_at?: string;
 }
 
-export interface QuizOption {
-  letter: string;
+export type QuestionType = 'qcm' | 'order' | 'matching' | 'document' | 'bucket' | 'scam' | 'scenario';
+
+export interface DocumentField {
+  id: string;
+  label: string;
+  value: string;
+  correct?: boolean;
+  hint?: string;
+}
+
+export interface BucketDefinition {
+  id: string;
+  label: string;
+  color?: string;
+}
+
+export interface BucketItem {
+  id: string;
+  text: string;
+  bucketId: string;
+}
+
+export interface BucketData {
+  buckets: BucketDefinition[];
+  items: BucketItem[];
+}
+
+export interface ScamData {
+  sender: string;
+  channel?: 'sms' | 'email' | 'notification';
+  message: string;
+  isScam: boolean;
+  redFlags?: string[];
+}
+
+export interface ScenarioOption {
+  id: string;
   text: string;
   correct: boolean;
+  consequence?: string;
+}
+
+export interface ScenarioData {
+  context: string;
+  persona?: {
+    name?: string;
+    role?: string;
+  };
+  keyFacts?: { label: string; value: string }[];
+  options: ScenarioOption[];
+}
+
+export interface QuizOption {
+  letter?: string;
+  text?: string;
+  correct?: boolean;
+  id?: string;
+  left?: string;
+  right?: string;
+  label?: string;
+  value?: string;
+  hint?: string;
 }
 
 export interface LessonQuestion {
   id: string;
   lesson_id: string;
   order_index: number;
+  type?: QuestionType;
   category: string;
   prompt: string;
-  options: QuizOption[];
+  options: any;
   explanation: string;
   created_at?: string;
 }
@@ -112,3 +171,26 @@ export interface DashboardStats {
   }[];
   recentLogs: AuditLog[];
 }
+
+export interface UserActivityEvent {
+  id: string;
+  user_id: string | null;
+  session_id: string;
+  event_type: string;
+  event_name: string;
+  screen_name?: string | null;
+  properties?: Record<string, any>;
+  created_at: string;
+  user_email?: string;
+  user_username?: string;
+}
+
+export interface ActivityStats {
+  totalEvents: number;
+  eventsToday: number;
+  activeUsersToday: number;
+  topScreens: { screen: string; count: number }[];
+  topEvents: { event: string; count: number }[];
+  eventsByType: { type: string; count: number }[];
+}
+

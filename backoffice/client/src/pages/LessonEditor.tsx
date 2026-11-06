@@ -5,7 +5,7 @@ import { PhonePreview } from '../components/preview/PhonePreview.js';
 import { Modal } from '../components/ui/Modal.js';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog.js';
 import api from '../services/api.js';
-import { Lesson, Category, Unit, LessonScreen, LessonQuestion, QuizOption } from '../types/index.js';
+import { Lesson, Category, Unit, LessonScreen, LessonQuestion, QuestionType } from '../types/index.js';
 import {
   DragDropContext,
   Droppable,
@@ -24,6 +24,12 @@ import {
   Lightbulb,
   Download,
   Check,
+  ListOrdered,
+  Link2,
+  FileSearch,
+  Layers,
+  ShieldAlert,
+  Briefcase,
 } from 'lucide-react';
 
 export const LessonEditor: React.FC = () => {
@@ -40,16 +46,17 @@ export const LessonEditor: React.FC = () => {
   const [lessonForm, setLessonForm] = useState({
     title: '',
     category_id: '',
-    unit_id: '',
+    unit_id: '' as string | undefined,
     xp_reward: 50,
     order_index: 1,
-    status: 'published' as 'draft' | 'published',
+    status: 'draft' as 'draft' | 'published',
   });
 
+  // Screens & Questions
   const [screens, setScreens] = useState<LessonScreen[]>([]);
   const [questions, setQuestions] = useState<LessonQuestion[]>([]);
 
-  // Preview & Active Tabs
+  // Active sub-tab & preview index
   const [activeTab, setActiveTab] = useState<'screens' | 'questions'>('screens');
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
 
@@ -66,11 +73,13 @@ export const LessonEditor: React.FC = () => {
   const [questionModalOpen, setQuestionModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<LessonQuestion | null>(null);
   const [questionForm, setQuestionForm] = useState<{
+    type: QuestionType;
     prompt: string;
     category: string;
     explanation: string;
-    options: QuizOption[];
+    options: any;
   }>({
+    type: 'qcm',
     prompt: '',
     category: 'Quiz',
     explanation: '',
@@ -132,48 +141,58 @@ export const LessonEditor: React.FC = () => {
   const filteredUnits = units.filter((u) => u.category_id === lessonForm.category_id);
   const selectedCategoryObj = categories.find((c) => c.id === lessonForm.category_id);
 
-  // Sauvegarder les métadonnées de la leçon
+  // ------------------------------------
+  // GESTION LEÇON PRINCIPALE
+  // ------------------------------------
   const handleSaveLesson = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!lessonForm.category_id || !lessonForm.unit_id || !lessonForm.title) {
-      alert('Veuillez renseigner le titre, la catégorie et l’unité');
-      return;
-    }
-
     setSaveLoading(true);
+
     try {
       if (isNew) {
         const res = await api.post('/content/lessons', lessonForm);
-        navigate(`/lessons/${res.data.id}`, { replace: true });
+        navigate(`/lessons/${res.data.id}`);
       } else {
         await api.put(`/content/lessons/${id}`, lessonForm);
-        alert('Leçon mise à jour avec succès !');
+        alert('Leçon enregistrée avec succès');
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Erreur enregistrement');
+      alert(err.response?.data?.error || 'Erreur lors de l’enregistrement');
     } finally {
       setSaveLoading(false);
     }
   };
 
+  const handleExportJson = () => {
+    const fullData = {
+      ...lessonForm,
+      category: selectedCategoryObj?.label,
+      screens,
+      questions,
+    };
+    const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lesson-${lessonForm.title.toLowerCase().replace(/\s+/g, '-') || 'export'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // ------------------------------------
-  // GESTION FICHES (SCREENS)
+  // GESTION DES FICHES DE COURS (SCREENS)
   // ------------------------------------
-  const handleOpenScreenModal = (sc?: LessonScreen) => {
-    if (sc) {
-      setEditingScreen(sc);
+  const handleOpenScreenModal = (screen?: LessonScreen) => {
+    if (screen) {
+      setEditingScreen(screen);
       setScreenForm({
-        title: sc.title,
-        body: sc.body,
-        tip: sc.tip || '',
+        title: screen.title,
+        body: screen.body,
+        tip: screen.tip || '',
       });
     } else {
       setEditingScreen(null);
-      setScreenForm({
-        title: '',
-        body: '',
-        tip: '',
-      });
+      setScreenForm({ title: '', body: '', tip: '' });
     }
     setScreenModalOpen(true);
   };
@@ -223,12 +242,13 @@ export const LessonEditor: React.FC = () => {
   };
 
   // ------------------------------------
-  // GESTION QUESTIONS (QUIZ)
+  // GESTION DES QUESTIONS DE QUIZ
   // ------------------------------------
   const handleOpenQuestionModal = (q?: LessonQuestion) => {
     if (q) {
       setEditingQuestion(q);
       setQuestionForm({
+        type: q.type || 'qcm',
         prompt: q.prompt,
         category: q.category || 'Quiz',
         explanation: q.explanation || '',
@@ -237,6 +257,7 @@ export const LessonEditor: React.FC = () => {
     } else {
       setEditingQuestion(null);
       setQuestionForm({
+        type: 'qcm',
         prompt: '',
         category: 'Quiz',
         explanation: '',
@@ -309,198 +330,218 @@ export const LessonEditor: React.FC = () => {
       items.splice(destIndex, 0, reorderedItem);
 
       // Réaffecter les order_index
-      const payload = items.map((item, index) => ({
-        id: item.id,
-        order_index: index + 1,
-      }));
-      setScreens(items.map((it, idx) => ({ ...it, order_index: idx + 1 })));
-      setActivePreviewIndex(destIndex);
+      const updated = items.map((item, idx) => ({ ...item, order_index: idx + 1 }));
+      setScreens(updated);
 
       try {
-        await api.post('/content/reorder', { type: 'screens', items: payload });
+        await api.post('/content/reorder', {
+          type: 'screens',
+          items: updated.map((i) => ({ id: i.id, order_index: i.order_index })),
+        });
       } catch (err) {
-        console.error('Erreur reorder screens:', err);
+        console.error('Erreur réordonnancement fiches', err);
       }
     } else {
       const items = Array.from(questions);
       const [reorderedItem] = items.splice(sourceIndex, 1);
       items.splice(destIndex, 0, reorderedItem);
 
-      const payload = items.map((item, index) => ({
-        id: item.id,
-        order_index: index + 1,
-      }));
-      setQuestions(items.map((it, idx) => ({ ...it, order_index: idx + 1 })));
-      setActivePreviewIndex(destIndex);
+      const updated = items.map((item, idx) => ({ ...item, order_index: idx + 1 }));
+      setQuestions(updated);
 
       try {
-        await api.post('/content/reorder', { type: 'questions', items: payload });
+        await api.post('/content/reorder', {
+          type: 'questions',
+          items: updated.map((i) => ({ id: i.id, order_index: i.order_index })),
+        });
       } catch (err) {
-        console.error('Erreur reorder questions:', err);
+        console.error('Erreur réordonnancement questions', err);
       }
     }
   };
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen">
+    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* HEADER DE NAVIGATION */}
       <Header
-        title={isNew ? 'Nouvelle Leçon' : `Édition : ${lessonForm.title || 'Leçon'}`}
-        subtitle="Rédigez le cours, configurez les quiz et observez le rendu simulateur"
+        title={isNew ? 'Nouvelle Leçon' : `Édition : ${lessonForm.title || 'Sans titre'}`}
+        subtitle="Configurez les paramètres de la leçon, ses fiches explicatives et ses exercices interactifs."
         action={
           <div className="flex items-center gap-2">
             <Link
               to="/lessons"
-              className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition"
             >
               <ArrowLeft size={14} />
               <span>Retour</span>
             </Link>
+
             {!isNew && (
               <button
                 type="button"
-                onClick={() => {
-                  api
-                    .get(`/import-export/lessons/${id}`)
-                    .then((res) => {
-                      const dataStr =
-                        'data:text/json;charset=utf-8,' +
-                        encodeURIComponent(JSON.stringify(res.data, null, 2));
-                      const a = document.createElement('a');
-                      a.href = dataStr;
-                      a.download = `lesson-${lessonForm.title}.json`;
-                      a.click();
-                      a.remove();
-                    })
-                    .catch(console.error);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition shadow-sm"
+                onClick={handleExportJson}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
               >
                 <Download size={14} />
                 <span>Exporter JSON</span>
               </button>
             )}
+
             <button
-              onClick={handleSaveLesson}
+              form="lesson-form"
+              type="submit"
               disabled={saveLoading}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition disabled:opacity-50"
             >
               <Save size={14} />
-              <span>{saveLoading ? 'Enregistrement...' : 'Enregistrer'}</span>
+              <span>{saveLoading ? 'Enregistrement...' : 'Enregistrer la leçon'}</span>
             </button>
           </div>
         }
       />
 
-      <div className="p-8 flex-1 grid grid-cols-1 xl:grid-cols-12 gap-8">
-        {/* COLONNE GAUCHE (7/12) : ÉDITEUR ET LISTE ORDONNABLE */}
+      {/* GRILLE PRINCIPALE (7 COLS GAUCHE : FORMULAIRE & ONGLETS, 5 COLS DROITE : PREVIEW SMARTPHONE) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        {/* COLONNE GAUCHE (7/12) */}
         <div className="xl:col-span-7 space-y-6">
-          {/* Métadonnées Leçon */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
-              Paramètres de la Leçon
+          {/* CARTE DES PARAMÈTRES GÉNÉRAUX */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 className="text-sm font-extrabold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center justify-between">
+              <span>Informations Générales</span>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  lessonForm.status === 'published'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                {lessonForm.status === 'published' ? 'Publiée' : 'Brouillon'}
+              </span>
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form id="lesson-form" onSubmit={handleSaveLesson} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Catégorie</label>
-                <select
-                  value={lessonForm.category_id}
-                  onChange={(e) =>
-                    setLessonForm({ ...lessonForm, category_id: e.target.value, unit_id: '' })
-                  }
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-semibold"
-                >
-                  <option value="">Sélectionner une catégorie</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Unité</label>
-                <select
-                  value={lessonForm.unit_id}
-                  onChange={(e) => setLessonForm({ ...lessonForm, unit_id: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-semibold"
-                >
-                  <option value="">Sélectionner une unité</option>
-                  {filteredUnits.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      Unité {u.unit_number} - {u.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Titre de la Leçon</label>
-              <input
-                type="text"
-                required
-                value={lessonForm.title}
-                onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
-                placeholder="ex: Se soigner sans galérer"
-                className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl font-bold"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Récompense XP</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Titre de la leçon
+                </label>
                 <input
-                  type="number"
-                  value={lessonForm.xp_reward}
-                  onChange={(e) =>
-                    setLessonForm({ ...lessonForm, xp_reward: Number(e.target.value) })
-                  }
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold text-amber-600"
+                  type="text"
+                  required
+                  value={lessonForm.title}
+                  onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
+                  placeholder="ex: Se soigner sans galérer"
+                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Ordre dans l'unité</label>
-                <input
-                  type="number"
-                  value={lessonForm.order_index}
-                  onChange={(e) =>
-                    setLessonForm({ ...lessonForm, order_index: Number(e.target.value) })
-                  }
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Catégorie</label>
+                  <select
+                    value={lessonForm.category_id}
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      setLessonForm({
+                        ...lessonForm,
+                        category_id: newCat,
+                        unit_id: undefined,
+                      });
+                    }}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Unité parente (Optionnel)
+                  </label>
+                  <select
+                    value={lessonForm.unit_id || ''}
+                    onChange={(e) =>
+                      setLessonForm({
+                        ...lessonForm,
+                        unit_id: e.target.value || undefined,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                  >
+                    <option value="">Aucune unité</option>
+                    {filteredUnits.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        Unité {u.unit_number} : {u.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Statut Publication</label>
-                <select
-                  value={lessonForm.status}
-                  onChange={(e) =>
-                    setLessonForm({
-                      ...lessonForm,
-                      status: e.target.value as 'draft' | 'published',
-                    })
-                  }
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold"
-                >
-                  <option value="published">Publié (En ligne)</option>
-                  <option value="draft">Brouillon (Masqué)</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Récompense XP
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10"
+                    value={lessonForm.xp_reward}
+                    onChange={(e) =>
+                      setLessonForm({ ...lessonForm, xp_reward: Number(e.target.value) })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Ordre d'affichage
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={lessonForm.order_index}
+                    onChange={(e) =>
+                      setLessonForm({ ...lessonForm, order_index: Number(e.target.value) })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Statut</label>
+                  <select
+                    value={lessonForm.status}
+                    onChange={(e) =>
+                      setLessonForm({
+                        ...lessonForm,
+                        status: e.target.value as 'draft' | 'published',
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                  >
+                    <option value="draft">Brouillon</option>
+                    <option value="published">Publiée</option>
+                  </select>
+                </div>
               </div>
-            </div>
+            </form>
           </div>
 
-          {/* Onglets Fiches vs Questions */}
+          {/* ONGLETS FICHES VS QUESTIONS */}
           {!isNew && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="flex border-b border-slate-200 bg-slate-50 px-4 pt-2">
@@ -537,7 +578,7 @@ export const LessonEditor: React.FC = () => {
                 </button>
               </div>
 
-              {/* Barre d'action de l'onglet */}
+              {/* BARRE D'ACTION DE L'ONGLET */}
               <div className="p-4 bg-white flex items-center justify-between border-b border-slate-100">
                 <p className="text-xs text-slate-500">
                   {activeTab === 'screens'
@@ -549,41 +590,31 @@ export const LessonEditor: React.FC = () => {
                   onClick={() =>
                     activeTab === 'screens' ? handleOpenScreenModal() : handleOpenQuestionModal()
                   }
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition"
                 >
                   <Plus size={14} />
-                  <span>
-                    {activeTab === 'screens' ? 'Ajouter une Fiche' : 'Ajouter une Question'}
-                  </span>
+                  <span>{activeTab === 'screens' ? 'Ajouter une Fiche' : 'Ajouter une Question'}</span>
                 </button>
               </div>
 
-              {/* LISTE AVEC DRAG AND DROP */}
+              {/* LISTE RÉORDONNABLE (DRAG AND DROP) */}
               <div className="p-4">
                 <DragDropContext onDragEnd={handleDragEnd}>
                   <Droppable droppableId="content-list">
                     {(provided) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="space-y-2.5"
-                      >
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                         {activeTab === 'screens'
                           ? screens.map((screen, index) => {
                               const isPreviewActive =
                                 activePreviewIndex === index && activeTab === 'screens';
                               return (
-                                <Draggable
-                                  key={screen.id}
-                                  draggableId={screen.id}
-                                  index={index}
-                                >
+                                <Draggable key={screen.id} draggableId={screen.id} index={index}>
                                   {(provided, snapshot) => (
                                     <div
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                       onClick={() => setActivePreviewIndex(index)}
-                                      className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition ${
+                                      className={`p-3.5 rounded-xl border flex items-center justify-between cursor-pointer transition ${
                                         snapshot.isDragging
                                           ? 'shadow-xl bg-blue-50 border-blue-400'
                                           : isPreviewActive
@@ -670,12 +701,57 @@ export const LessonEditor: React.FC = () => {
                                           {index + 1}
                                         </div>
                                         <div>
-                                          <h4 className="text-xs font-bold text-slate-900">
-                                            {q.prompt}
-                                          </h4>
+                                          <div className="flex items-center gap-2 mb-0.5">
+                                            <span
+                                              className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                                                q.type === 'order'
+                                                  ? 'bg-purple-100 text-purple-700'
+                                                  : q.type === 'matching'
+                                                  ? 'bg-emerald-100 text-emerald-700'
+                                                  : q.type === 'document'
+                                                  ? 'bg-amber-100 text-amber-800'
+                                                  : q.type === 'bucket'
+                                                  ? 'bg-indigo-100 text-indigo-700'
+                                                  : q.type === 'scam'
+                                                  ? 'bg-rose-100 text-rose-700'
+                                                  : q.type === 'scenario'
+                                                  ? 'bg-sky-100 text-sky-700'
+                                                  : 'bg-blue-100 text-blue-700'
+                                              }`}
+                                            >
+                                              {q.type === 'order'
+                                                ? 'Ordre'
+                                                : q.type === 'matching'
+                                                ? 'Association'
+                                                : q.type === 'document'
+                                                ? 'Décryptage'
+                                                : q.type === 'bucket'
+                                                ? 'Tri en bac'
+                                                : q.type === 'scam'
+                                                ? 'Arnaque'
+                                                : q.type === 'scenario'
+                                                ? 'Cas pratique'
+                                                : 'QCM'}
+                                            </span>
+                                            <h4 className="text-xs font-bold text-slate-900 truncate max-w-[280px]">
+                                              {q.prompt}
+                                            </h4>
+                                          </div>
                                           <p className="text-[11px] text-slate-500">
-                                            {q.options?.length || 0} choix configurés • Catégorie :{' '}
-                                            {q.category}
+                                            {q.type === 'matching'
+                                              ? `${q.options?.length || 0} paires configurées`
+                                              : q.type === 'order'
+                                              ? `${q.options?.length || 0} étapes à ordonner`
+                                              : q.type === 'document'
+                                              ? `${q.options?.length || 0} lignes de document`
+                                              : q.type === 'bucket'
+                                              ? `${q.options?.items?.length || 0} éléments à trier`
+                                              : q.type === 'scam'
+                                              ? `Simulation ${q.options?.channel || 'SMS'}`
+                                              : q.type === 'scenario'
+                                              ? `${q.options?.options?.length || 0} décisions à choisir`
+                                              : `${q.options?.length || 0} choix configurés`}{' '}
+                                            • Catégorie : {q.category}
                                           </p>
                                         </div>
                                       </div>
@@ -815,6 +891,230 @@ export const LessonEditor: React.FC = () => {
         maxWidth="2xl"
       >
         <form onSubmit={handleSaveQuestion} className="space-y-4">
+          {/* Sélecteur de type d'exercice */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Type d'exercice
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  if (questionForm.type !== 'qcm') {
+                    setQuestionForm({
+                      ...questionForm,
+                      type: 'qcm',
+                      options: [
+                        { letter: 'A', text: '', correct: true },
+                        { letter: 'B', text: '', correct: false },
+                        { letter: 'C', text: '', correct: false },
+                      ],
+                    });
+                  }
+                }}
+                className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition ${
+                  questionForm.type === 'qcm'
+                    ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <HelpCircle size={14} />
+                <span>QCM</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (questionForm.type !== 'order') {
+                    setQuestionForm({
+                      ...questionForm,
+                      type: 'order',
+                      options: [
+                        { id: '1', text: '' },
+                        { id: '2', text: '' },
+                        { id: '3', text: '' },
+                        { id: '4', text: '' },
+                      ],
+                    });
+                  }
+                }}
+                className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition ${
+                  questionForm.type === 'order'
+                    ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <ListOrdered size={14} />
+                <span>Ordre</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (questionForm.type !== 'matching') {
+                    setQuestionForm({
+                      ...questionForm,
+                      type: 'matching',
+                      options: [
+                        { id: '1', left: '', right: '' },
+                        { id: '2', left: '', right: '' },
+                        { id: '3', left: '', right: '' },
+                        { id: '4', left: '', right: '' },
+                      ],
+                    });
+                  }
+                }}
+                className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition ${
+                  questionForm.type === 'matching'
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Link2 size={14} />
+                <span>Association</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (questionForm.type !== 'document') {
+                    setQuestionForm({
+                      ...questionForm,
+                      type: 'document',
+                      options: [
+                        { id: '1', label: 'Salaire brut', value: '2 100,00 €', correct: false },
+                        { id: '2', label: 'Net à payer avant impôt', value: '1 650,00 €', correct: true },
+                        { id: '3', label: 'Cotisations santé', value: '180,00 €', correct: false },
+                      ],
+                    });
+                  }
+                }}
+                className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition ${
+                  questionForm.type === 'document'
+                    ? 'bg-amber-50 border-amber-500 text-amber-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <FileSearch size={14} />
+                <span>Décryptage</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (questionForm.type !== 'bucket') {
+                    setQuestionForm({
+                      ...questionForm,
+                      type: 'bucket',
+                      options: {
+                        buckets: [
+                          { id: 'b1', label: 'Besoins', color: '#3B82F6' },
+                          { id: 'b2', label: 'Envies', color: '#8B5CF6' },
+                          { id: 'b3', label: 'Épargne', color: '#10B981' },
+                        ],
+                        items: [
+                          { id: '1', text: 'Loyer et charges', bucketId: 'b1' },
+                          { id: '2', text: 'Sorties & loisirs', bucketId: 'b2' },
+                          { id: '3', text: 'Virement Livret A', bucketId: 'b3' },
+                        ],
+                      },
+                    });
+                  }
+                }}
+                className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition ${
+                  questionForm.type === 'bucket'
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Layers size={14} />
+                <span>Tri en bac</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (questionForm.type !== 'scam') {
+                    setQuestionForm({
+                      ...questionForm,
+                      type: 'scam',
+                      options: {
+                        sender: 'Alerte-Sécurité (+33 7 45 12 98 23)',
+                        channel: 'sms',
+                        message: 'ALERTE SÉCURITÉ : Un paiement suspect de 350€ a été détecté. Annulez-le immédiatement ici : https://espace-securite-banque.com',
+                        isScam: true,
+                        redFlags: [
+                          "Une banque ne demande JAMAIS d'annuler une opération par SMS",
+                          "Numéro de portable individuel (07)",
+                          "Lien pirate non officiel"
+                        ],
+                      },
+                    });
+                  }
+                }}
+                className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition ${
+                  questionForm.type === 'scam'
+                    ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <ShieldAlert size={14} />
+                <span>Arnaque</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (questionForm.type !== 'scenario') {
+                    setQuestionForm({
+                      ...questionForm,
+                      type: 'scenario',
+                      options: {
+                        context: "Lucas a un imprévu : sa facture d'électricité de 90 € vient d'arriver alors qu'il ne lui reste que 40 € sur son compte avant sa paie dans 10 jours.",
+                        persona: {
+                          name: "Lucas",
+                          role: "Jeune actif",
+                        },
+                        keyFacts: [
+                          { label: "Solde", value: "40 €" },
+                          { label: "Facture", value: "90 €" },
+                        ],
+                        options: [
+                          {
+                            id: '1',
+                            text: "Contacter le fournisseur pour demander un report ou un étalement sans frais",
+                            correct: true,
+                            consequence: "Super réflexe ! Prévenir en amont permet d'obtenir un délai sans frais ni pénalité.",
+                          },
+                          {
+                            id: '2',
+                            text: "Laisser le prélèvement passer et payer 20 € d'agios et de frais de rejet",
+                            correct: false,
+                            consequence: "Mauvais calcul : un rejet engendre des frais bancaires et un rappel avec pénalité.",
+                          },
+                          {
+                            id: '3',
+                            text: "Souscrire un mini-crédit express en ligne à taux très élevé",
+                            correct: false,
+                            consequence: "Danger d'endettement : les taux de ces crédits rapides dépassent souvent 15 à 20%.",
+                          },
+                        ],
+                      },
+                    });
+                  }
+                }}
+                className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition ${
+                  questionForm.type === 'scenario'
+                    ? 'bg-sky-50 border-sky-500 text-sky-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Briefcase size={14} />
+                <span>Cas pratique</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -825,7 +1125,21 @@ export const LessonEditor: React.FC = () => {
                 required
                 value={questionForm.prompt}
                 onChange={(e) => setQuestionForm({ ...questionForm, prompt: e.target.value })}
-                placeholder="ex: Tu n'as pas déclaré de médecin traitant. Que se passe-t-il ?"
+                placeholder={
+                  questionForm.type === 'order'
+                    ? "ex: Remets dans le bon ordre les étapes pour déclarer un médecin..."
+                    : questionForm.type === 'matching'
+                    ? "ex: Associe chaque document à son rôle exact..."
+                    : questionForm.type === 'document'
+                    ? "ex: Sur cette fiche de paie, quelle ligne indique la somme virée sur ton compte ?"
+                    : questionForm.type === 'bucket'
+                    ? "ex: Classe chaque dépense dans sa catégorie budgétaire (50/30/20)..."
+                    : questionForm.type === 'scam'
+                    ? "ex: Tu reçois ce SMS d'alerte bancaire. Arnaque ou authentique ?"
+                    : questionForm.type === 'scenario'
+                    ? "ex: Aide Lucas à résoudre son imprévu financier de fin de mois..."
+                    : "ex: Tu n'as pas déclaré de médecin traitant. Que se passe-t-il ?"
+                }
                 className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold"
               />
             </div>
@@ -841,51 +1155,905 @@ export const LessonEditor: React.FC = () => {
             </div>
           </div>
 
-          {/* Options de réponse */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-2">
-              Options de réponse (Cochez la bonne réponse)
-            </label>
-            <div className="space-y-2">
-              {questionForm.options.map((opt, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center">
-                    {opt.letter}
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    value={opt.text}
-                    onChange={(e) => {
-                      const newOpts = [...questionForm.options];
-                      newOpts[idx].text = e.target.value;
-                      setQuestionForm({ ...questionForm, options: newOpts });
-                    }}
-                    placeholder={`Texte de l'option ${opt.letter}`}
-                    className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
-                  />
+          {/* 1. ÉDITEUR TYPE QCM */}
+          {questionForm.type === 'qcm' && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  Options de réponse (Cochez la bonne réponse)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentOpts = Array.isArray(questionForm.options) ? questionForm.options : [];
+                    const nextLetter = String.fromCharCode(65 + currentOpts.length);
+                    setQuestionForm({
+                      ...questionForm,
+                      options: [...currentOpts, { letter: nextLetter, text: '', correct: false }],
+                    });
+                  }}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                >
+                  <Plus size={14} />
+                  <span>Ajouter une option</span>
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {(Array.isArray(questionForm.options) ? questionForm.options : []).map((opt: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center">
+                      {opt.letter || String.fromCharCode(65 + idx)}
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={opt.text || ''}
+                      onChange={(e) => {
+                        const newOpts = [...questionForm.options];
+                        newOpts[idx] = { ...newOpts[idx], text: e.target.value };
+                        setQuestionForm({ ...questionForm, options: newOpts });
+                      }}
+                      placeholder={`Texte de l'option ${opt.letter || String.fromCharCode(65 + idx)}`}
+                      className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOpts = (questionForm.options as any[]).map((o: any, i: number) => ({
+                          ...o,
+                          correct: i === idx,
+                        }));
+                        setQuestionForm({ ...questionForm, options: newOpts });
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+                        opt.correct
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Check size={12} />
+                      <span>{opt.correct ? 'Correcte' : 'Fausse'}</span>
+                    </button>
+                    {(questionForm.options as any[]).length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newOpts = (questionForm.options as any[]).filter((_: any, i: number) => i !== idx);
+                          setQuestionForm({ ...questionForm, options: newOpts });
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 2. ÉDITEUR TYPE ORDRE (CHRONOLOGIE) */}
+          {questionForm.type === 'order' && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  Étapes dans le bon ordre (L’application les mélangera automatiquement pour l'utilisateur)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentOpts = Array.isArray(questionForm.options) ? questionForm.options : [];
+                    const nextId = String(currentOpts.length + 1);
+                    setQuestionForm({
+                      ...questionForm,
+                      options: [...currentOpts, { id: nextId, text: '' }],
+                    });
+                  }}
+                  className="text-xs font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                >
+                  <Plus size={14} />
+                  <span>Ajouter une étape</span>
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {(Array.isArray(questionForm.options) ? questionForm.options : []).map((step: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={step.text || ''}
+                      onChange={(e) => {
+                        const newOpts = [...questionForm.options];
+                        newOpts[idx] = { ...newOpts[idx], text: e.target.value };
+                        setQuestionForm({ ...questionForm, options: newOpts });
+                      }}
+                      placeholder={`Étape ${idx + 1} dans l'ordre chronologique exact`}
+                      className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                    />
+                    {(questionForm.options as any[]).length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newOpts = (questionForm.options as any[]).filter((_: any, i: number) => i !== idx);
+                          setQuestionForm({ ...questionForm, options: newOpts });
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 3. ÉDITEUR TYPE ASSOCIATION (MATCHING) */}
+          {questionForm.type === 'matching' && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  Paires à associer (Gauche ↔ Droite)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentOpts = Array.isArray(questionForm.options) ? questionForm.options : [];
+                    const nextId = String(currentOpts.length + 1);
+                    setQuestionForm({
+                      ...questionForm,
+                      options: [...currentOpts, { id: nextId, left: '', right: '' }],
+                    });
+                  }}
+                  className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                >
+                  <Plus size={14} />
+                  <span>Ajouter une paire</span>
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {(Array.isArray(questionForm.options) ? questionForm.options : []).map((pair: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={pair.left || ''}
+                      onChange={(e) => {
+                        const newOpts = [...questionForm.options];
+                        newOpts[idx] = { ...newOpts[idx], left: e.target.value };
+                        setQuestionForm({ ...questionForm, options: newOpts });
+                      }}
+                      placeholder="Élément gauche (ex: Carte Vitale)"
+                      className="w-1/2 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                    />
+                    <span className="text-slate-400 font-bold">↔</span>
+                    <input
+                      type="text"
+                      required
+                      value={pair.right || ''}
+                      onChange={(e) => {
+                        const newOpts = [...questionForm.options];
+                        newOpts[idx] = { ...newOpts[idx], right: e.target.value };
+                        setQuestionForm({ ...questionForm, options: newOpts });
+                      }}
+                      placeholder="Élément droit (ex: Remboursement Sécu)"
+                      className="w-1/2 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                    />
+                    {(questionForm.options as any[]).length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newOpts = (questionForm.options as any[]).filter((_: any, i: number) => i !== idx);
+                          setQuestionForm({ ...questionForm, options: newOpts });
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. ÉDITEUR TYPE DÉCRYPTAGE DE DOCUMENT */}
+          {questionForm.type === 'document' && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  Lignes du document (Cochez la ligne cible à identifier)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentOpts = Array.isArray(questionForm.options) ? questionForm.options : [];
+                    const nextId = String(currentOpts.length + 1);
+                    setQuestionForm({
+                      ...questionForm,
+                      options: [
+                        ...currentOpts,
+                        { id: nextId, label: '', value: '', correct: false },
+                      ],
+                    });
+                  }}
+                  className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+                >
+                  <Plus size={14} />
+                  <span>Ajouter une ligne</span>
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {(Array.isArray(questionForm.options) ? questionForm.options : []).map((field: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={field.label || ''}
+                      onChange={(e) => {
+                        const newOpts = [...questionForm.options];
+                        newOpts[idx] = { ...newOpts[idx], label: e.target.value };
+                        setQuestionForm({ ...questionForm, options: newOpts });
+                      }}
+                      placeholder="Intitulé de la ligne (ex: Salaire brut)"
+                      className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                    />
+                    <input
+                      type="text"
+                      required
+                      value={field.value || ''}
+                      onChange={(e) => {
+                        const newOpts = [...questionForm.options];
+                        newOpts[idx] = { ...newOpts[idx], value: e.target.value };
+                        setQuestionForm({ ...questionForm, options: newOpts });
+                      }}
+                      placeholder="Montant / Mention (ex: 2 150,00 €)"
+                      className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOpts = (questionForm.options as any[]).map((f: any, i: number) => ({
+                          ...f,
+                          correct: i === idx,
+                        }));
+                        setQuestionForm({ ...questionForm, options: newOpts });
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+                        field.correct
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Check size={12} />
+                      <span>{field.correct ? 'Cible' : 'Neutre'}</span>
+                    </button>
+                    {(questionForm.options as any[]).length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newOpts = (questionForm.options as any[]).filter((_: any, i: number) => i !== idx);
+                          setQuestionForm({ ...questionForm, options: newOpts });
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 5. ÉDITEUR TYPE TRI EN BAC */}
+          {questionForm.type === 'bucket' && (
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Bacs de tri (Catégories)
+                  </label>
                   <button
                     type="button"
                     onClick={() => {
-                      const newOpts = questionForm.options.map((o, i) => ({
-                        ...o,
-                        correct: i === idx,
-                      }));
-                      setQuestionForm({ ...questionForm, options: newOpts });
+                      const currentBuckets = questionForm.options?.buckets || [];
+                      const nextId = `b${currentBuckets.length + 1}`;
+                      setQuestionForm({
+                        ...questionForm,
+                        options: {
+                          ...questionForm.options,
+                          buckets: [...currentBuckets, { id: nextId, label: '', color: '#3B82F6' }],
+                        },
+                      });
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
-                      opt.correct
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                    }`}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
                   >
-                    <Check size={12} />
-                    <span>{opt.correct ? 'Correcte' : 'Fausse'}</span>
+                    <Plus size={14} />
+                    <span>Ajouter un bac</span>
                   </button>
                 </div>
-              ))}
+
+                <div className="space-y-2">
+                  {(questionForm.options?.buckets || []).map((bucket: any, bIdx: number) => (
+                    <div key={bucket.id || bIdx} className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full flex-shrink-0" style={{ backgroundColor: bucket.color || '#3B82F6' }} />
+                      <input
+                        type="text"
+                        required
+                        value={bucket.label || ''}
+                        onChange={(e) => {
+                          const newBuckets = [...(questionForm.options?.buckets || [])];
+                          newBuckets[bIdx] = { ...newBuckets[bIdx], label: e.target.value };
+                          setQuestionForm({
+                            ...questionForm,
+                            options: { ...questionForm.options, buckets: newBuckets },
+                          });
+                        }}
+                        placeholder={`Nom du bac ${bIdx + 1} (ex: Besoins 50%)`}
+                        className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                      />
+                      {(questionForm.options?.buckets || []).length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newBuckets = questionForm.options.buckets.filter((_: any, i: number) => i !== bIdx);
+                            setQuestionForm({
+                              ...questionForm,
+                              options: { ...questionForm.options, buckets: newBuckets },
+                            });
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Éléments à classer et leur bac cible
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentItems = questionForm.options?.items || [];
+                      const defaultBucketId = questionForm.options?.buckets?.[0]?.id || 'b1';
+                      const nextId = String(currentItems.length + 1);
+                      setQuestionForm({
+                        ...questionForm,
+                        options: {
+                          ...questionForm.options,
+                          items: [...currentItems, { id: nextId, text: '', bucketId: defaultBucketId }],
+                        },
+                      });
+                    }}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                  >
+                    <Plus size={14} />
+                    <span>Ajouter un élément</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {(questionForm.options?.items || []).map((item: any, itIdx: number) => (
+                    <div key={item.id || itIdx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        required
+                        value={item.text || ''}
+                        onChange={(e) => {
+                          const newItems = [...(questionForm.options?.items || [])];
+                          newItems[itIdx] = { ...newItems[itIdx], text: e.target.value };
+                          setQuestionForm({
+                            ...questionForm,
+                            options: { ...questionForm.options, items: newItems },
+                          });
+                        }}
+                        placeholder="Élément à trier (ex: Loyer et électricité)"
+                        className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                      />
+                      <select
+                        value={item.bucketId || ''}
+                        onChange={(e) => {
+                          const newItems = [...(questionForm.options?.items || [])];
+                          newItems[itIdx] = { ...newItems[itIdx], bucketId: e.target.value };
+                          setQuestionForm({
+                            ...questionForm,
+                            options: { ...questionForm.options, items: newItems },
+                          });
+                        }}
+                        className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700"
+                      >
+                        {(questionForm.options?.buckets || []).map((b: any) => (
+                          <option key={b.id} value={b.id}>
+                            Bac : {b.label}
+                          </option>
+                        ))}
+                      </select>
+                      {(questionForm.options?.items || []).length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newItems = questionForm.options.items.filter((_: any, i: number) => i !== itIdx);
+                            setQuestionForm({
+                              ...questionForm,
+                              options: { ...questionForm.options, items: newItems },
+                            });
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* 6. ÉDITEUR TYPE DÉTECTEUR D'ARNAQUE */}
+          {questionForm.type === 'scam' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Expéditeur simulé
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={questionForm.options?.sender || ''}
+                    onChange={(e) =>
+                      setQuestionForm({
+                        ...questionForm,
+                        options: { ...questionForm.options, sender: e.target.value },
+                      })
+                    }
+                    placeholder="ex: Votre Banque (+33 7 45 12 98 23)"
+                    className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Canal de réception
+                  </label>
+                  <select
+                    value={questionForm.options?.channel || 'sms'}
+                    onChange={(e) =>
+                      setQuestionForm({
+                        ...questionForm,
+                        options: { ...questionForm.options, channel: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700"
+                  >
+                    <option value="sms">SMS / Message texte</option>
+                    <option value="email">E-mail</option>
+                    <option value="notification">Notification d'application</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Texte du message simulé
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={questionForm.options?.message || ''}
+                  onChange={(e) =>
+                    setQuestionForm({
+                      ...questionForm,
+                      options: { ...questionForm.options, message: e.target.value },
+                    })
+                  }
+                  placeholder="Rédigez le texte du message avec éventuel faux lien..."
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+
+              {/* Verdict : Arnaque ou Légitime */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-xs font-bold text-slate-700">Ce message est réellement :</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuestionForm({
+                      ...questionForm,
+                      options: { ...questionForm.options, isScam: true },
+                    })
+                  }
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+                    questionForm.options?.isScam !== false
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'bg-white border border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <ShieldAlert size={14} />
+                  <span>Une Arnaque</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuestionForm({
+                      ...questionForm,
+                      options: { ...questionForm.options, isScam: false },
+                    })
+                  }
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition ${
+                    questionForm.options?.isScam === false
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-white border border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <Check size={14} />
+                  <span>Authentique</span>
+                </button>
+              </div>
+
+              {/* Indices / Red flags */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Indices de détection (affichés en correction)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentFlags = questionForm.options?.redFlags || [];
+                      setQuestionForm({
+                        ...questionForm,
+                        options: {
+                          ...questionForm.options,
+                          redFlags: [...currentFlags, ''],
+                        },
+                      });
+                    }}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1"
+                  >
+                    <Plus size={14} />
+                    <span>Ajouter un indice</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {(questionForm.options?.redFlags || []).map((flag: string, fIdx: number) => (
+                    <div key={fIdx} className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-rose-600">🚨</span>
+                      <input
+                        type="text"
+                        required
+                        value={flag}
+                        onChange={(e) => {
+                          const newFlags = [...(questionForm.options?.redFlags || [])];
+                          newFlags[fIdx] = e.target.value;
+                          setQuestionForm({
+                            ...questionForm,
+                            options: { ...questionForm.options, redFlags: newFlags },
+                          });
+                        }}
+                        placeholder="ex: Une banque ne demande jamais d'annuler une opération par SMS"
+                        className="flex-1 px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFlags = questionForm.options.redFlags.filter((_: any, i: number) => i !== fIdx);
+                          setQuestionForm({
+                            ...questionForm,
+                            options: { ...questionForm.options, redFlags: newFlags },
+                          });
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 7. ÉDITEUR TYPE CAS PRATIQUE / SCÉNARIO */}
+          {questionForm.type === 'scenario' && (
+            <div className="space-y-4 p-3 bg-sky-50/50 rounded-2xl border border-sky-100">
+              <div className="flex items-center gap-2 text-xs font-bold text-sky-900 border-b border-sky-100 pb-2">
+                <Briefcase size={14} className="text-sky-600" />
+                <span>Configuration du Cas Pratique (Mise en situation)</span>
+              </div>
+
+              {/* Persona */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Prénom du personnage
+                  </label>
+                  <input
+                    type="text"
+                    value={questionForm.options?.persona?.name || ''}
+                    onChange={(e) =>
+                      setQuestionForm({
+                        ...questionForm,
+                        options: {
+                          ...questionForm.options,
+                          persona: {
+                            ...(questionForm.options?.persona || {}),
+                            name: e.target.value,
+                          },
+                        },
+                      })
+                    }
+                    placeholder="ex: Lucas"
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Rôle / Situation du personnage
+                  </label>
+                  <input
+                    type="text"
+                    value={questionForm.options?.persona?.role || ''}
+                    onChange={(e) =>
+                      setQuestionForm({
+                        ...questionForm,
+                        options: {
+                          ...questionForm.options,
+                          persona: {
+                            ...(questionForm.options?.persona || {}),
+                            role: e.target.value,
+                          },
+                        },
+                      })
+                    }
+                    placeholder="ex: Étudiant alternant 21 ans"
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              {/* Contexte narratif */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Mise en situation / Contexte narratif
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={questionForm.options?.context || ''}
+                  onChange={(e) =>
+                    setQuestionForm({
+                      ...questionForm,
+                      options: { ...questionForm.options, context: e.target.value },
+                    })
+                  }
+                  placeholder="Décrivez la situation concrète à laquelle le personnage fait face..."
+                  className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl leading-relaxed"
+                />
+              </div>
+
+              {/* Indicateurs clés */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Indicateurs clés / Chiffres du cas (optionnel)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentFacts = questionForm.options?.keyFacts || [];
+                      setQuestionForm({
+                        ...questionForm,
+                        options: {
+                          ...questionForm.options,
+                          keyFacts: [...currentFacts, { label: '', value: '' }],
+                        },
+                      });
+                    }}
+                    className="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1"
+                  >
+                    <Plus size={14} />
+                    <span>Ajouter un indicateur</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {(questionForm.options?.keyFacts || []).map((fact: any, fIdx: number) => (
+                    <div key={fIdx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={fact.label || ''}
+                        onChange={(e) => {
+                          const newFacts = [...(questionForm.options?.keyFacts || [])];
+                          newFacts[fIdx] = { ...newFacts[fIdx], label: e.target.value };
+                          setQuestionForm({
+                            ...questionForm,
+                            options: { ...questionForm.options, keyFacts: newFacts },
+                          });
+                        }}
+                        placeholder="Label (ex: Solde bancaire)"
+                        className="w-1/2 px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl"
+                      />
+                      <input
+                        type="text"
+                        value={fact.value || ''}
+                        onChange={(e) => {
+                          const newFacts = [...(questionForm.options?.keyFacts || [])];
+                          newFacts[fIdx] = { ...newFacts[fIdx], value: e.target.value };
+                          setQuestionForm({
+                            ...questionForm,
+                            options: { ...questionForm.options, keyFacts: newFacts },
+                          });
+                        }}
+                        placeholder="Valeur (ex: 40 €)"
+                        className="w-1/2 px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFacts = questionForm.options.keyFacts.filter((_: any, i: number) => i !== fIdx);
+                          setQuestionForm({
+                            ...questionForm,
+                            options: { ...questionForm.options, keyFacts: newFacts },
+                          });
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Décisions & Conséquences */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Choix de décisions & Conséquences
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentOpts = questionForm.options?.options || [];
+                      const nextId = String(currentOpts.length + 1);
+                      setQuestionForm({
+                        ...questionForm,
+                        options: {
+                          ...questionForm.options,
+                          options: [
+                            ...currentOpts,
+                            { id: nextId, text: '', correct: false, consequence: '' },
+                          ],
+                        },
+                      });
+                    }}
+                    className="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1"
+                  >
+                    <Plus size={14} />
+                    <span>Ajouter une décision</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {(questionForm.options?.options || []).map((opt: any, oIdx: number) => (
+                    <div
+                      key={opt.id || oIdx}
+                      className={`p-3 rounded-xl border transition ${
+                        opt.correct
+                          ? 'bg-emerald-50/70 border-emerald-300'
+                          : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center">
+                            {String.fromCharCode(65 + oIdx)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newOpts = (questionForm.options?.options || []).map(
+                                (o: any, idx: number) => ({
+                                  ...o,
+                                  correct: idx === oIdx,
+                                })
+                              );
+                              setQuestionForm({
+                                ...questionForm,
+                                options: { ...questionForm.options, options: newOpts },
+                              });
+                            }}
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition ${
+                              opt.correct
+                                ? 'bg-emerald-600 border-emerald-600 text-white'
+                                : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+                            }`}
+                          >
+                            {opt.correct ? '✓ Meilleure décision' : 'Définir comme bon choix'}
+                          </button>
+                        </div>
+
+                        {(questionForm.options?.options || []).length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newOpts = questionForm.options.options.filter(
+                                (_: any, i: number) => i !== oIdx
+                              );
+                              setQuestionForm({
+                                ...questionForm,
+                                options: { ...questionForm.options, options: newOpts },
+                              });
+                            }}
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded-lg"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <input
+                          type="text"
+                          required
+                          value={opt.text || ''}
+                          onChange={(e) => {
+                            const newOpts = [...(questionForm.options?.options || [])];
+                            newOpts[oIdx] = { ...newOpts[oIdx], text: e.target.value };
+                            setQuestionForm({
+                              ...questionForm,
+                              options: { ...questionForm.options, options: newOpts },
+                            });
+                          }}
+                          placeholder="Action / Décision proposée au joueur..."
+                          className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-medium"
+                        />
+                        <input
+                          type="text"
+                          value={opt.consequence || ''}
+                          onChange={(e) => {
+                            const newOpts = [...(questionForm.options?.options || [])];
+                            newOpts[oIdx] = { ...newOpts[oIdx], consequence: e.target.value };
+                            setQuestionForm({
+                              ...questionForm,
+                              options: { ...questionForm.options, options: newOpts },
+                            });
+                          }}
+                          placeholder="Conséquence concrète / Feedback pédagogique..."
+                          className="w-full px-3 py-1.5 text-[11px] bg-slate-50 border border-slate-200 rounded-lg text-slate-600"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Explication */}
           <div>

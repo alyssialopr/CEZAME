@@ -553,12 +553,13 @@ router.delete('/screens/:id', async (req: AuthenticatedRequest, res) => {
 router.post('/lessons/:id/questions', async (req: AuthenticatedRequest, res) => {
   try {
     const lesson_id = String(req.params.id);
-    const { category, prompt, options, explanation, order_index } = req.body;
+    const { type, category, prompt, options, explanation, order_index } = req.body;
 
     const { data, error } = await supabaseAdmin
       .from('lesson_questions')
       .insert({
         lesson_id,
+        type: type || 'qcm',
         category: category || 'Quiz',
         prompt,
         options,
@@ -582,11 +583,12 @@ router.post('/lessons/:id/questions', async (req: AuthenticatedRequest, res) => 
 router.put('/questions/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = String(req.params.id);
-    const { category, prompt, options, explanation, order_index } = req.body;
+    const { type, category, prompt, options, explanation, order_index } = req.body;
 
     const { data, error } = await supabaseAdmin
       .from('lesson_questions')
       .update({
+        type: type || 'qcm',
         category,
         prompt,
         options,
