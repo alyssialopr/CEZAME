@@ -14,8 +14,13 @@ export default function PublicLayout() {
   }
 
   if (session) {
-    return <Redirect href={"/(private)/categories" as RelativePathString} />;
+    return <Redirect href="/categories" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="login" />
+      <Stack.Screen name="signup" />
+    </Stack>
+  );
 }

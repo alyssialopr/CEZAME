@@ -16,12 +16,12 @@ export default function RootIndex() {
   }
 
   if (!session) {
-    return <Redirect href="/(public)/login" />;
+    return <Redirect href="/login" />;
   }
 
   if (userProfile && !userProfile.is_onboarding_completed) {
     return <Redirect href="/(onboarding)" />;
   }
 
-  return <Redirect href="/(private)/categories" />;
+  return <Redirect href="/categories" />;
 }
