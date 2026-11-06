@@ -1,5 +1,6 @@
 import { submitOnboardingAnswers } from '@/lib/onboarding';
 import { useAuth } from '@/providers/AuthProvider';
+import { useActiveCategory } from '@/providers/CategoryProvider';
 import { useTutorial } from '@/providers/TutorialProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -8,6 +9,14 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import Animated, { FadeInRight, FadeOutLeft, LinearTransition, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfettiCannon from 'react-native-confetti-cannon';
+
+const ONBOARDING_STEP_TO_CATEGORY_ID: Record<string, string> = {
+  social_security: 'sante',
+  bank_account: 'finance',
+  driver_licence: 'voiture',
+  tax_return: 'administration',
+  housing: 'logement',
+};
 
 const STEPS = [
   {
@@ -66,6 +75,7 @@ export default function OnboardingScreen() {
   const { session } = useAuth();
   const queryClient = useQueryClient();
   const { requestTutorial } = useTutorial();
+  const { setActiveCategoryId } = useActiveCategory();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -127,7 +137,7 @@ export default function OnboardingScreen() {
     }
   };
 
-  const { score, rank, weakCategoryTitles } = useMemo(() => {
+  const { score, rank, weakCategoryTitles, weakCategoryIds } = useMemo(() => {
     let totalScore = 0;
     const categoryScores: { id: string; title: string; score: number }[] = [];
 
@@ -154,13 +164,20 @@ export default function OnboardingScreen() {
     return { score: totalScore, rank: calculatedRank, weakCategoryTitles: weakestTitles, weakCategoryIds: weakestIds };
   }, [answers]);
 
-  const finishAndGoHome = () => {
-    // Demande le tuto (il démarrera au 1er passage sur le home), puis on envoie
-    // l'utilisateur choisir son thème sur la liste des catégories.
-    // (L'ancien setActiveCategoryId(weakCategoryIds[0]) était inopérant : les ids
-    // des STEPS ne correspondent pas aux ids de CATEGORIES → retombait sur finance.)
+  const finishAndGoHome = async () => {
+    // Récupère la catégorie correspondant au score le plus faible
+    const weakestStepId = weakCategoryIds[0];
+    const recommendedCatId =
+      (weakestStepId && ONBOARDING_STEP_TO_CATEGORY_ID[weakestStepId]) || 'sante';
+
+    // Définit la catégorie recommandée comme active pour le parcours
+    await setActiveCategoryId(recommendedCatId);
+
+    // Demande le tutoriel interactif (démarrera sur le home)
     requestTutorial();
-    router.replace('/(private)/categories');
+
+    // Redirige directement vers le parcours d'apprentissage de la catégorie recommandée
+    router.replace('/(private)/(tabs)');
   };
 
   if (isCompleted) {

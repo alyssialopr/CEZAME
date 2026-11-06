@@ -8,7 +8,6 @@ import {
   Gem,
   Heart,
   Key,
-  Landmark,
   Lock,
   LogOut,
   Pencil,
@@ -80,7 +79,11 @@ export default function ProfileScreen() {
         <TouchableOpacity
           style={styles.logoContainer}
           onPress={() => router.push("/categories")}>
-          <Landmark color="#8B5CF6" size={20} />
+          <Image
+            source={require("@/images/logo.png")}
+            style={styles.logoImage}
+            contentFit="contain"
+          />
           <Text style={styles.logo}>CEZAME</Text>
         </TouchableOpacity>
 
@@ -203,6 +206,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  logoImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   logo: {
     fontSize: 24,

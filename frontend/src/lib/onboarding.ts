@@ -91,4 +91,26 @@ export const submitOnboardingAnswers = async (userId: string, answers: any) => {
     .eq('id', userId);
 
   if (userError) throw userError;
+
+  // 4. Valider automatiquement les leçons et unités correspondant aux réponses onboarding
+  try {
+    await supabase.rpc('apply_onboarding_progress', { p_user_id: userId });
+  } catch (rpcErr) {
+    console.warn('[onboarding] apply_onboarding_progress RPC notice:', rpcErr);
+  }
+
+  // 5. Nettoyer le cache local AsyncStorage pour afficher instantanément la nouvelle progression
+  try {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    const allKeys: string[] = await AsyncStorage.getAllKeys();
+    const staleKeys = allKeys.filter(
+      (k: string) => k.startsWith('@cezame_units_') || k.startsWith('@cezame_progress_')
+    );
+    if (staleKeys.length > 0) {
+      await AsyncStorage.multiRemove(staleKeys);
+    }
+  } catch (storageErr) {
+    console.warn('[onboarding] AsyncStorage cache cleanup notice:', storageErr);
+  }
 };
+

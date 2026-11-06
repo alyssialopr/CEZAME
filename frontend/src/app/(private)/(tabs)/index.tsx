@@ -5,7 +5,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  type ViewInstance,
 } from "react-native";
 
 import { LessonPath } from "@/components/lesson-path";
@@ -14,10 +15,11 @@ import { useProgress } from "@/hooks/useProgress";
 import { useRewards } from "@/hooks/useRewards";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { LESSONS } from "@/constants/lessons";
+import { TUTORIAL_STEPS } from "@/constants/tutorial";
 import { useActiveCategory } from "@/providers/CategoryProvider";
 import { useTutorial } from "@/providers/TutorialProvider";
 import { Image } from "expo-image";
-import { Flame, Gem, Landmark, Lock } from "lucide-react-native";
+import { Flame, Gem, Lock } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
@@ -32,8 +34,8 @@ export default function HomeScreen() {
     start: startTutorial,
     pressTarget,
   } = useTutorial();
-  const logoRef = useRef<View>(null);
-  const lessonNodeRef = useRef<View>(null);
+  const logoRef = useRef<ViewInstance>(null);
+  const lessonNodeRef = useRef<ViewInstance>(null);
   useTutorialTarget("home-logo", logoRef);
   useTutorialTarget("lesson-node", lessonNodeRef);
 
@@ -41,7 +43,8 @@ export default function HomeScreen() {
   // (fin d'onboarding ou « Revoir le tutoriel »).
   useEffect(() => {
     if (tutorialPending && !tutorialActive) {
-      startTutorial();
+      const homeStepIndex = TUTORIAL_STEPS.findIndex((s) => s.screen === 'home');
+      startTutorial(homeStepIndex >= 0 ? homeStepIndex : 0);
     }
   }, [tutorialPending, tutorialActive, startTutorial]);
 
@@ -59,7 +62,11 @@ export default function HomeScreen() {
             if (pressTarget("home-logo")) return;
             router.push("/categories");
           }}>
-          <Landmark color="#8B5CF6" size={20} />
+          <Image
+            source={require("@/images/logo.png")}
+            style={styles.logoImage}
+            contentFit="contain"
+          />
           <Text style={styles.logo}>CEZAME</Text>
         </TouchableOpacity>
 
@@ -111,6 +118,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+
+  logoImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
 
   logo: {

@@ -1,13 +1,14 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Flame, Gem, Landmark } from "lucide-react-native";
+import { Flame, Gem } from "lucide-react-native";
 import { useEffect, useRef } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
 import { NavBar, NavKey } from "@/components/nav-bar";
 import { useProgress } from "@/hooks/useProgress";
+import { useRewards } from "@/hooks/useRewards";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useActiveCategory } from "@/providers/CategoryProvider";
 import { useTutorial } from "@/providers/TutorialProvider";
@@ -15,10 +16,11 @@ import { useTutorial } from "@/providers/TutorialProvider";
 export default function CategoriesScreen() {
   const router = useRouter();
   const { data: progress } = useProgress();
+  const { gems } = useRewards();
   const { setActiveCategoryId } = useActiveCategory();
 
   const { pending, isActive, start, pressTarget } = useTutorial();
-  const firstCardRef = useRef<View>(null);
+  const firstCardRef = useRef<ViewInstance>(null);
   useTutorialTarget("category-card", firstCardRef);
 
   // Le tuto démarre ICI (1er écran après le bilan d'onboarding).
@@ -43,7 +45,11 @@ export default function CategoriesScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Landmark color="#8B5CF6" size={20} />
+          <Image
+            source={require("@/images/logo.png")}
+            style={styles.logoImage}
+            contentFit="contain"
+          />
           <Text style={styles.logoText}>CEZAME</Text>
         </View>
 
@@ -55,7 +61,7 @@ export default function CategoriesScreen() {
 
           <View style={styles.stat}>
             <Gem size={18} color="#29B6F6" />
-            <Text style={styles.blue}>500</Text>
+            <Text style={styles.blue}>{gems}</Text>
           </View>
         </View>
       </View>
@@ -102,6 +108,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  logoImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   logoText: {
     fontSize: 20,

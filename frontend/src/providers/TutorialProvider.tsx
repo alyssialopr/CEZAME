@@ -27,7 +27,7 @@ type TutorialContextType = {
   targetRect: TargetRect | null;
   /** Demande l'affichage du tuto (il démarrera sur le home). */
   requestTutorial: () => void;
-  start: () => void;
+  start: (initialIndex?: number) => void;
   next: () => void;
   /** Avance si le tuto est actif et cible cette étape. Renvoie true si consommé. */
   pressTarget: (id: string) => boolean;
@@ -70,10 +70,10 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(PENDING_KEY, 'true').catch(() => {});
   }, []);
 
-  const start = useCallback(() => {
+  const start = useCallback((initialIndex = 0) => {
     setPending(false);
     AsyncStorage.removeItem(PENDING_KEY).catch(() => {});
-    setCurrentStepIndex(0);
+    setCurrentStepIndex(initialIndex);
     setTargetRectState(null);
     setIsActive(true);
   }, []);
