@@ -164,7 +164,7 @@ export async function fetchCategoryUnits(
         }
 
         // Assembler les unités avec le statut séquentiel calculé
-        let previousCompleted = true; // La 1ère leçon est débloquée
+        let previousLessonCompleted = true; // La toute 1ère leçon est débloquée
         const formattedUnits: DBUnit[] = unitsData.map((unit) => {
           const unitLessons = lessonsData
             .filter((l) => l.unit_id === unit.id)
@@ -172,15 +172,16 @@ export async function fetchCategoryUnits(
               const explicitStatus = progressMap[lesson.id];
               let status: LessonProgressStatus = 'locked';
 
-              if (explicitStatus === 'completed') {
+              // Une leçon ne peut être 'completed' que si les leçons précédentes le sont également
+              if (explicitStatus === 'completed' && previousLessonCompleted) {
                 status = 'completed';
-                previousCompleted = true;
-              } else if (explicitStatus === 'unlocked' || previousCompleted) {
+                previousLessonCompleted = true;
+              } else if (previousLessonCompleted) {
                 status = 'unlocked';
-                previousCompleted = false;
+                previousLessonCompleted = false;
               } else {
                 status = 'locked';
-                previousCompleted = false;
+                previousLessonCompleted = false;
               }
 
               return {

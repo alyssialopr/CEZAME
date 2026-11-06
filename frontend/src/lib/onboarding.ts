@@ -92,13 +92,6 @@ export const submitOnboardingAnswers = async (userId: string, answers: any) => {
 
   if (userError) throw userError;
 
-  // 4. Valider automatiquement les leçons et unités correspondant aux réponses onboarding
-  try {
-    await supabase.rpc('apply_onboarding_progress', { p_user_id: userId });
-  } catch (rpcErr) {
-    console.warn('[onboarding] apply_onboarding_progress RPC notice:', rpcErr);
-  }
-
   // 5. Nettoyer le cache local AsyncStorage pour afficher instantanément la nouvelle progression
   try {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;

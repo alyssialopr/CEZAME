@@ -112,7 +112,16 @@ class TrackerService {
    * Suivi du flux pédagogique (leçons, quiz, exercices)
    */
   public async trackLessonEvent(
-    action: 'lesson_started' | 'lesson_completed' | 'lesson_abandoned' | 'question_answered' | 'screen_swiped',
+    action:
+      | 'lesson_opened'
+      | 'lesson_started'
+      | 'lesson_completed'
+      | 'lesson_abandoned'
+      | 'question_answered'
+      | 'screen_swiped'
+      | 'screen_read'
+      | 'quiz_started'
+      | string,
     lessonId: string,
     details: Record<string, any> = {}
   ): Promise<void> {

@@ -41,6 +41,21 @@ export function ScamExercise({
   const messageText = parsed.message || parsed.text || parsed.body || parsed.content || 'ALERTE : Veuillez vérifier vos accès immédiatement.';
   const channel = parsed.channel || 'sms';
 
+  const isSocialMedia =
+    channel === 'social' ||
+    channel === 'network' ||
+    senderText.includes('(@') ||
+    senderText.toLowerCase().includes('crypto') ||
+    /réseau social|telegram|instagram|tiktok|snapchat/i.test(messageText);
+
+  const channelLabel = isSocialMedia
+    ? 'Message sur réseau social'
+    : channel === 'email'
+    ? 'E-mail reçu'
+    : channel === 'notification'
+    ? 'Notification d’application'
+    : 'SMS / Message texte';
+
   return (
     <View style={styles.container}>
       {/* Simulation Message Smartphone */}
@@ -54,13 +69,7 @@ export function ScamExercise({
             <Text style={styles.senderName} numberOfLines={1}>
               {senderText}
             </Text>
-            <Text style={styles.messageChannel}>
-              {channel === 'email'
-                ? 'E-mail reçu'
-                : channel === 'notification'
-                ? 'Notification d’application'
-                : 'SMS / Message texte'}
-            </Text>
+            <Text style={styles.messageChannel}>{channelLabel}</Text>
           </View>
         </View>
 
