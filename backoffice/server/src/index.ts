@@ -21,12 +21,3 @@ if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
 
 export default app;
 
-// Compatibilité universelle Vercel Serverless Function & CommonJS
-// @ts-ignore
-if (typeof module !== 'undefined' && module.exports) {
-  // @ts-ignore
-  module.exports = app;
-  // @ts-ignore
-  module.exports.default = app;
-}
-
