@@ -94,7 +94,7 @@ export const Login: React.FC = () => {
 
         {/* Alert Error */}
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-3">
+          <div data-testid="login-error" className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-3">
             <ShieldAlert size={18} className="flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed font-medium">{errorMessage}</p>
           </div>
@@ -111,6 +111,7 @@ export const Login: React.FC = () => {
               <input
                 type="email"
                 required
+                data-testid="login-email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@cezame.app"
@@ -128,6 +129,7 @@ export const Login: React.FC = () => {
               <input
                 type="password"
                 required
+                data-testid="login-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
@@ -138,6 +140,7 @@ export const Login: React.FC = () => {
 
           <button
             type="submit"
+            data-testid="login-submit"
             disabled={loading}
             className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition shadow-md shadow-blue-600/30 disabled:opacity-50 mt-2"
           >

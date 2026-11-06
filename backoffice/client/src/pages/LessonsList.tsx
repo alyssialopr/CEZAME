@@ -4,6 +4,7 @@ import { Header } from '../components/layout/Header.js';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog.js';
 import { Modal } from '../components/ui/Modal.js';
 import api from '../services/api.js';
+import { buildImportRequest } from '../lib/lessonImport.js';
 import { Lesson, Category, Unit } from '../types/index.js';
 import {
   Plus,
@@ -134,13 +135,9 @@ export const LessonsList: React.FC = () => {
     }
 
     try {
-      const parsed = JSON.parse(importJsonText);
+      const body = buildImportRequest(importCategoryId, importUnitId, importJsonText);
       setActionLoading(true);
-      const res = await api.post('/import-export/lessons', {
-        targetCategoryId: importCategoryId,
-        targetUnitId: importUnitId,
-        payload: parsed,
-      });
+      const res = await api.post('/import-export/lessons', body);
       alert(res.data.message || 'Leçon importée avec succès !');
       setImportModalOpen(false);
       setImportJsonText('');
@@ -164,6 +161,7 @@ export const LessonsList: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              data-testid="import-open"
               onClick={() => setImportModalOpen(true)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
             >
@@ -379,6 +377,7 @@ export const LessonsList: React.FC = () => {
               <label className="block text-xs font-bold text-slate-700 mb-1">Catégorie cible</label>
               <select
                 required
+                data-testid="import-category"
                 value={importCategoryId}
                 onChange={(e) => setImportCategoryId(e.target.value)}
                 className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"
@@ -397,6 +396,7 @@ export const LessonsList: React.FC = () => {
               <select
                 required
                 disabled={!importCategoryId}
+                data-testid="import-unit"
                 value={importUnitId}
                 onChange={(e) => setImportUnitId(e.target.value)}
                 className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl disabled:opacity-50"
@@ -418,6 +418,7 @@ export const LessonsList: React.FC = () => {
             <textarea
               required
               rows={10}
+              data-testid="import-json"
               value={importJsonText}
               onChange={(e) => setImportJsonText(e.target.value)}
               placeholder='Collez ici la structure JSON exportée (ex: {"lesson": {"title": "...", "screens": [...], "questions": [...]}})'
@@ -435,6 +436,7 @@ export const LessonsList: React.FC = () => {
             </button>
             <button
               type="submit"
+              data-testid="import-submit"
               disabled={actionLoading}
               className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50"
             >
