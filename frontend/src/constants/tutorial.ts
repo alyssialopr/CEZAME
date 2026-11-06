@@ -42,11 +42,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     screen: 'categories',
     text: 'Choisis un thème pour commencer ton parcours.',
     placement: 'below',
+    // La mascotte est rognée par la carte (overflow: hidden) : le cadre mesuré
+    // est exactement la carte visible, pas besoin de décalage.
     cutoutPadding: 6,
-    // La carte a une mascotte qui déborde ~20px sous le cadre mesuré → on
-    // étend le trou vers le bas pour bien recouvrir toute la carte visible.
-    cutoutPaddingBottom: 28,
-    cutoutOffsetY: 52,
     cutoutRadius: 18,
     ctaLabel: 'Suivant',
     requireTap: true,
@@ -57,7 +55,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     text: 'Appuie sur COMMENCER pour lancer ta première leçon.',
     placement: 'above',
     cutoutPadding: 8,
-    // cutoutOffsetY: 2,
     cutoutRadius: 60,
     ctaLabel: 'Suivant',
     requireTap: true,

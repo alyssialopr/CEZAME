@@ -1,10 +1,12 @@
 import { usePathname } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
+  type ViewInstance,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Mask, Rect } from 'react-native-svg';
@@ -33,26 +35,45 @@ function screenMatchesPath(screen: TutorialScreen, pathname: string): boolean {
   }
 }
 
+type Frame = { x: number; y: number; width: number; height: number };
+
 export function TutorialOverlay() {
   const { isActive, currentStep, targetRect, next, skip } = useTutorial();
-  const { width, height } = useWindowDimensions();
+  const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+
+  // Les cibles sont mesurées en coordonnées fenêtre (measureInWindow). L'overlay
+  // n'occupe pas forcément toute la fenêtre (sur le web l'app est dans un cadre de
+  // téléphone centré) : on mesure donc sa propre origine pour y ramener le trou.
+  const rootRef = useRef<ViewInstance>(null);
+  const [frame, setFrame] = useState<Frame | null>(null);
+  const measureFrame = useCallback(() => {
+    rootRef.current?.measureInWindow((x, y, width, height) => {
+      if (width > 0 && height > 0) setFrame({ x, y, width, height });
+    });
+  }, []);
+  // Le cadre peut se recentrer sans changer de taille (fenêtre élargie) : onLayout
+  // ne se redéclenche pas, on re-mesure donc à chaque changement de fenêtre.
+  useEffect(measureFrame, [measureFrame, window.width, window.height, isActive]);
 
   if (!isActive || !currentStep) return null;
   if (!screenMatchesPath(currentStep.screen, pathname)) return null;
 
+  const width = frame?.width ?? window.width;
+  const height = frame?.height ?? window.height;
   const pad = currentStep.cutoutPadding;
   const padBottom = currentStep.cutoutPaddingBottom ?? pad;
   const offsetY = currentStep.cutoutOffsetY ?? 0;
-  const hole = targetRect
-    ? {
-        x: targetRect.x - pad,
-        y: targetRect.y - pad + offsetY,
-        w: targetRect.width + pad * 2,
-        h: targetRect.height + pad + padBottom,
-      }
-    : null;
+  const hole =
+    targetRect && frame
+      ? {
+          x: targetRect.x - frame.x - pad,
+          y: targetRect.y - frame.y - pad + offsetY,
+          w: targetRect.width + pad * 2,
+          h: targetRect.height + pad + padBottom,
+        }
+      : null;
 
   // Position de la bulle (bornée à l'écran, ne chevauche jamais la cible).
   const minTop = insets.top + 12;
@@ -68,7 +89,7 @@ export function TutorialOverlay() {
   tooltipTop = Math.max(minTop, Math.min(tooltipTop, maxTop));
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <View ref={rootRef} onLayout={measureFrame} style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* Fond assombri + trou spotlight — purement visuel, ne capte aucun tap */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <Svg width={width} height={height}>

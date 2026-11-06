@@ -11,8 +11,10 @@ import { useTutorial } from '@/providers/TutorialProvider';
  * cible cette étape ET que l'écran est au premier plan (useFocusEffect) — ce qui
  * garantit une re-mesure correcte au retour sur un écran (ex. le home après la leçon).
  *
- * La mesure est répétée jusqu'à stabilisation pour éviter un cadrage capturé
- * pendant une transition d'écran.
+ * Une position n'est publiée qu'une fois stable (plusieurs mesures identiques),
+ * pour ne pas cadrer une transition d'écran. La mesure continue ensuite tant que
+ * l'étape est affichée : si la cible bouge (en-tête chargé après coup, défilement,
+ * rotation), le spotlight la suit au lieu de rester sur l'ancienne position.
  */
 export function useTutorialTarget(id: TutorialStepId, ref: React.RefObject<ViewInstance | null>) {
   const { isActive, currentStep, setTargetRect } = useTutorial();
@@ -24,33 +26,33 @@ export function useTutorialTarget(id: TutorialStepId, ref: React.RefObject<ViewI
 
       let cancelled = false;
       let lastKey = '';
+      let publishedKey = '';
       let sameCount = 0;
-      const STABLE_THRESHOLD = 3; // 3 mesures identiques d'affilée (~240ms) = position figée
-      const timers: ReturnType<typeof setTimeout>[] = [];
+      const STABLE_THRESHOLD = 3; // 3 mesures identiques d'affilée = position figée
+      const INTERVAL_MS = 80; // tant que la position n'est pas publiée
+      const WATCH_INTERVAL_MS = 250; // ensuite, surveillance plus espacée
+      let timer: ReturnType<typeof setTimeout> | undefined;
 
-      const scheduleRetry = (attempt: number) => {
-        timers.push(setTimeout(() => measure(attempt + 1), 80));
+      const schedule = () => {
+        if (cancelled) return;
+        timer = setTimeout(measure, publishedKey && publishedKey === lastKey ? WATCH_INTERVAL_MS : INTERVAL_MS);
       };
 
-      const measure = (attempt = 0) => {
-        if (cancelled || attempt > 30) return;
+      const measure = () => {
+        if (cancelled) return;
         const node = ref.current;
         if (!node || typeof node.measureInWindow !== 'function') {
-          scheduleRetry(attempt);
+          schedule();
           return;
         }
 
         node.measureInWindow((x: number, y: number, width: number, height: number) => {
           if (cancelled) return;
           if (width === 0 || height === 0) {
-            scheduleRetry(attempt);
+            schedule();
             return;
           }
 
-          // On n'AFFICHE le spotlight qu'une fois la position VRAIMENT figée
-          // (plusieurs mesures identiques d'affilée). Pendant une transition
-          // d'écran la position change à chaque frame → le compteur se remet à
-          // zéro, donc aucune position transitoire (mal cadrée) n'est affichée.
           const key = `${Math.round(x)},${Math.round(y)},${Math.round(width)},${Math.round(height)}`;
           if (key === lastKey) {
             sameCount += 1;
@@ -59,20 +61,20 @@ export function useTutorialTarget(id: TutorialStepId, ref: React.RefObject<ViewI
             lastKey = key;
           }
 
-          if (sameCount >= STABLE_THRESHOLD) {
+          if (sameCount >= STABLE_THRESHOLD && key !== publishedKey) {
+            publishedKey = key;
             setTargetRect({ x, y, width, height });
-          } else {
-            scheduleRetry(attempt);
           }
+          schedule();
         });
       };
 
-      const animFrame = requestAnimationFrame(() => measure(0));
+      const animFrame = requestAnimationFrame(measure);
 
       return () => {
         cancelled = true;
         cancelAnimationFrame(animFrame);
-        timers.forEach(clearTimeout);
+        if (timer) clearTimeout(timer);
       };
     }, [isCurrent, ref, setTargetRect]),
   );
