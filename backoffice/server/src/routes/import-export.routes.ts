@@ -30,7 +30,7 @@ router.get('/lessons/:id', async (req, res) => {
         .order('order_index', { ascending: true }),
       supabaseAdmin
         .from('lesson_questions')
-        .select('category, prompt, options, explanation, order_index')
+        .select('type, category, prompt, options, explanation, order_index')
         .eq('lesson_id', id)
         .order('order_index', { ascending: true }),
     ]);
@@ -63,14 +63,16 @@ router.post('/lessons', async (req: AuthenticatedRequest, res) => {
   try {
     const { targetUnitId, targetCategoryId, payload } = req.body;
 
-    if (!targetUnitId || !targetCategoryId || !payload?.lesson) {
+    const lessonData = payload?.lesson || payload;
+
+    if (!targetUnitId || !targetCategoryId || !lessonData) {
       res.status(400).json({
         error: 'targetUnitId, targetCategoryId et structure JSON de la leçon requises',
       });
       return;
     }
 
-    const { title, xp_reward = 50, screens = [], questions = [] } = payload.lesson;
+    const { title, xp_reward = 50, screens = [], questions = [] } = lessonData;
 
     // Déterminer l'order_index suivant pour cette unité
     const { count } = await supabaseAdmin
@@ -116,6 +118,7 @@ router.post('/lessons', async (req: AuthenticatedRequest, res) => {
       const questionsToInsert = questions.map((q: any, idx: number) => ({
         lesson_id: newLesson.id,
         order_index: q.order_index || idx + 1,
+        type: q.type || 'qcm',
         category: q.category || 'Quiz',
         prompt: q.prompt || 'Question',
         options: q.options || [],
