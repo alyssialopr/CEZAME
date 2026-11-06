@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import { supabaseAdmin } from '../config/supabase.js';
+import { auditPagination } from '../lib/pagination.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -8,10 +9,7 @@ router.use(requireAuth);
 // Lister les logs d'audit avec pagination
 router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 30;
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
+    const { page, limit, from, to } = auditPagination(req.query.page, req.query.limit);
 
     const { data, count, error } = await supabaseAdmin
       .from('audit_logs')

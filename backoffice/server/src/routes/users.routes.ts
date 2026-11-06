@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import { supabaseAdmin, hasServiceRoleKey } from '../config/supabase.js';
 import { logAudit } from '../middleware/audit.js';
+import { buildFallbackUsers, isTesterUser, resolveUserRole } from '../lib/users.js';
 
 const router = Router();
 
@@ -19,14 +20,7 @@ router.get('/', requireAuth, async (_req: AuthenticatedRequest, res) => {
         return;
       }
 
-      const uniqueIds = Array.from(new Set((progressUsers || []).map((p) => p.user_id)));
-      const fallbackList = uniqueIds.map((id) => ({
-        id,
-        email: `utilisateur-${id.substring(0, 8)}@cezame.app`,
-        created_at: new Date().toISOString(),
-        user_metadata: { username: `Apprenant_${id.substring(0, 4)}` },
-        isFallback: true,
-      }));
+      const fallbackList = buildFallbackUsers((progressUsers || []).map((p) => p.user_id));
 
       res.json({
         users: fallbackList,
@@ -57,11 +51,7 @@ router.get('/', requireAuth, async (_req: AuthenticatedRequest, res) => {
           .eq('user_id', u.id)
           .eq('status', 'completed');
 
-        const isTester = Boolean(
-          u.user_metadata?.is_test_user ||
-          u.email?.includes('cezame-test.app') ||
-          u.email?.includes('test.cezame.app')
-        );
+        const isTester = isTesterUser(u);
 
         return {
           id: u.id,
@@ -69,7 +59,7 @@ router.get('/', requireAuth, async (_req: AuthenticatedRequest, res) => {
           created_at: u.created_at,
           last_sign_in_at: u.last_sign_in_at,
           username: u.user_metadata?.username || u.email?.split('@')[0],
-          role: roleMap.get(u.id) || (isTester ? 'tester' : 'user'),
+          role: resolveUserRole(roleMap.get(u.id), isTester),
           isTester,
           completedLessonsCount: completedCount || 0,
         };

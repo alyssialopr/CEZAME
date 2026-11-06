@@ -2,6 +2,14 @@ import { Router } from 'express';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import { supabaseAdmin } from '../config/supabase.js';
 import { logAudit } from '../middleware/audit.js';
+import {
+  buildLessonExport,
+  exportFilename,
+  mapImportedQuestions,
+  mapImportedScreens,
+  readLessonFields,
+  unwrapLessonPayload,
+} from '../lib/lessonTransfer.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -35,22 +43,12 @@ router.get('/lessons/:id', async (req, res) => {
         .order('order_index', { ascending: true }),
     ]);
 
-    const exportData = {
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      lesson: {
-        title: lesson.title,
-        category_id: lesson.category_id,
-        xp_reward: lesson.xp_reward,
-        screens: screens || [],
-        questions: questions || [],
-      },
-    };
+    const exportData = buildLessonExport(lesson, screens, questions);
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="lesson-${lesson.title.replace(/\s+/g, '_')}.json"`
+      `attachment; filename="${exportFilename(lesson.title)}"`
     );
     res.json(exportData);
   } catch (err: any) {
@@ -63,7 +61,7 @@ router.post('/lessons', async (req: AuthenticatedRequest, res) => {
   try {
     const { targetUnitId, targetCategoryId, payload } = req.body;
 
-    const lessonData = payload?.lesson || payload;
+    const lessonData = unwrapLessonPayload(payload);
 
     if (!targetUnitId || !targetCategoryId || !lessonData) {
       res.status(400).json({
@@ -72,7 +70,7 @@ router.post('/lessons', async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const { title, xp_reward = 50, screens = [], questions = [] } = lessonData;
+    const { title, xpReward, screens, questions } = readLessonFields(lessonData);
 
     // Déterminer l'order_index suivant pour cette unité
     const { count } = await supabaseAdmin
@@ -88,8 +86,8 @@ router.post('/lessons', async (req: AuthenticatedRequest, res) => {
       .insert({
         unit_id: targetUnitId,
         category_id: targetCategoryId,
-        title: title || 'Nouvelle Leçon Importée',
-        xp_reward: Number(xp_reward) || 50,
+        title,
+        xp_reward: xpReward,
         order_index: nextOrder,
         status: 'draft',
       })
@@ -103,28 +101,12 @@ router.post('/lessons', async (req: AuthenticatedRequest, res) => {
 
     // 2. Insérer les fiches
     if (Array.isArray(screens) && screens.length > 0) {
-      const screensToInsert = screens.map((s: any, idx: number) => ({
-        lesson_id: newLesson.id,
-        order_index: s.order_index || idx + 1,
-        title: s.title || `Fiche ${idx + 1}`,
-        body: s.body || '',
-        tip: s.tip || null,
-      }));
-      await supabaseAdmin.from('lesson_screens').insert(screensToInsert);
+      await supabaseAdmin.from('lesson_screens').insert(mapImportedScreens(screens, newLesson.id));
     }
 
     // 3. Insérer les questions
     if (Array.isArray(questions) && questions.length > 0) {
-      const questionsToInsert = questions.map((q: any, idx: number) => ({
-        lesson_id: newLesson.id,
-        order_index: q.order_index || idx + 1,
-        type: q.type || 'qcm',
-        category: q.category || 'Quiz',
-        prompt: q.prompt || 'Question',
-        options: q.options || [],
-        explanation: q.explanation || '',
-      }));
-      await supabaseAdmin.from('lesson_questions').insert(questionsToInsert);
+      await supabaseAdmin.from('lesson_questions').insert(mapImportedQuestions(questions, newLesson.id));
     }
 
     await logAudit({

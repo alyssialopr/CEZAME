@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import { supabaseAdmin, hasServiceRoleKey } from '../config/supabase.js';
+import { activityPagination } from '../lib/pagination.js';
+import { aggregateActivity } from '../lib/activityStats.js';
 
 const router = Router();
 
@@ -41,9 +43,7 @@ async function getUserInfoMap(): Promise<Map<string, { email: string; username: 
 // 1. Liste paginée et filtrée des événements (Customer.io style stream)
 router.get('/events', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const page = Math.max(1, parseInt(String(req.query.page || '1'), 10));
-    const limit = Math.min(100, Math.max(10, parseInt(String(req.query.limit || '30'), 10)));
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = activityPagination(req.query.page, req.query.limit);
 
     const userId = req.query.user_id ? String(req.query.user_id) : null;
     const eventType = req.query.event_type ? String(req.query.event_type) : null;
@@ -138,44 +138,15 @@ router.get('/stats', requireAuth, async (_req: AuthenticatedRequest, res) => {
       return;
     }
 
-    const screenCounts: Record<string, number> = {};
-    const eventCounts: Record<string, number> = {};
-    const typeCounts: Record<string, number> = {};
-    const activeUserSetToday = new Set<string>();
-
-    (recentEvents || []).forEach((ev) => {
-      if (ev.screen_name) {
-        screenCounts[ev.screen_name] = (screenCounts[ev.screen_name] || 0) + 1;
-      }
-      if (ev.event_name) {
-        eventCounts[ev.event_name] = (eventCounts[ev.event_name] || 0) + 1;
-      }
-      if (ev.event_type) {
-        typeCounts[ev.event_type] = (typeCounts[ev.event_type] || 0) + 1;
-      }
-      if (ev.user_id && ev.created_at >= todayIso) {
-        activeUserSetToday.add(ev.user_id);
-      }
-    });
-
-    const topScreens = Object.entries(screenCounts)
-      .map(([screen, count]) => ({ screen, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-
-    const topEvents = Object.entries(eventCounts)
-      .map(([event, count]) => ({ event, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-
-    const eventsByType = Object.entries(typeCounts)
-      .map(([type, count]) => ({ type, count }))
-      .sort((a, b) => b.count - a.count);
+    const { activeUsersToday, topScreens, topEvents, eventsByType } = aggregateActivity(
+      recentEvents || [],
+      todayIso
+    );
 
     res.json({
       totalEvents: totalEvents || 0,
       eventsToday: eventsToday || 0,
-      activeUsersToday: activeUserSetToday.size,
+      activeUsersToday,
       topScreens,
       topEvents,
       eventsByType,
