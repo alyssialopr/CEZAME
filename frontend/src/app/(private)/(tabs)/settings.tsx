@@ -59,7 +59,65 @@ export default function SettingsScreen() {
   const email = user?.email || 'testeur@cezame.app';
 
   // 1. Réinitialisation complète pour les sessions de tests utilisateurs
+  const performReset = async () => {
+    try {
+      // Effacer les clés locales AsyncStorage
+      const allKeys = await AsyncStorage.getAllKeys();
+      const keysToRemove = allKeys.filter(
+        (k) =>
+          k.startsWith('@cezame_') ||
+          k.startsWith('@tutorial_') ||
+          k === '@active_category'
+      );
+      if (keysToRemove.length > 0) {
+        await AsyncStorage.multiRemove(keysToRemove);
+      }
+
+      // Si connecté sur Supabase, remettre à zéro
+      if (session?.user?.id) {
+        await supabase
+          .from('users')
+          .update({ is_onboarding_completed: false })
+          .eq('id', session.user.id);
+
+        await supabase
+          .from('progress')
+          .update({ streak: 0, xp: 0, rank: 'bronze' })
+          .eq('user_id', session.user.id);
+
+        // Mettre à jour le cache queryClient
+        queryClient.setQueryData(['userProfile', session.user.id], (old: any) =>
+          old ? { ...old, is_onboarding_completed: false } : null
+        );
+      }
+
+      // Invalider tous les caches React Query
+      await queryClient.invalidateQueries();
+
+      if (Platform.OS === 'web') {
+        window.alert("Données de test réinitialisées ! Tu vas être redirigé vers l'onboarding.");
+      } else {
+        Alert.alert('Succès 🎉', 'Données de test réinitialisées ! Tu vas être redirigé vers l\'onboarding.');
+      }
+      router.replace('/(onboarding)');
+    } catch (err) {
+      console.error('Erreur réinitialisation :', err);
+      if (Platform.OS === 'web') {
+        window.alert('Erreur: Impossible de réinitialiser toutes les données.');
+      } else {
+        Alert.alert('Erreur', 'Impossible de réinitialiser toutes les données.');
+      }
+    }
+  };
+
   const handleResetForTesting = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm("Réinitialiser pour un nouveau test ?\nCette action efface la progression des leçons, les badges et le bilan d'onboarding afin de recommencer le parcours depuis le début.")) {
+        performReset();
+      }
+      return;
+    }
+
     Alert.alert(
       'Réinitialiser pour un nouveau test ?',
       'Cette action efface la progression des leçons, les badges et le bilan d\'onboarding afin de recommencer le parcours depuis le début.',
@@ -68,48 +126,7 @@ export default function SettingsScreen() {
         {
           text: 'Réinitialiser',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              // Effacer les clés locales AsyncStorage
-              const allKeys = await AsyncStorage.getAllKeys();
-              const keysToRemove = allKeys.filter(
-                (k) =>
-                  k.startsWith('@cezame_') ||
-                  k.startsWith('@tutorial_') ||
-                  k === '@active_category'
-              );
-              if (keysToRemove.length > 0) {
-                await AsyncStorage.multiRemove(keysToRemove);
-              }
-
-              // Si connecté sur Supabase, remettre à zéro
-              if (session?.user?.id) {
-                await supabase
-                  .from('users')
-                  .update({ is_onboarding_completed: false })
-                  .eq('id', session.user.id);
-
-                await supabase
-                  .from('progress')
-                  .update({ streak: 0, xp: 0, rank: 'bronze' })
-                  .eq('user_id', session.user.id);
-
-                // Mettre à jour le cache queryClient
-                queryClient.setQueryData(['userProfile', session.user.id], (old: any) =>
-                  old ? { ...old, is_onboarding_completed: false } : null
-                );
-              }
-
-              // Invalider tous les caches React Query
-              await queryClient.invalidateQueries();
-
-              Alert.alert('Succès 🎉', 'Données de test réinitialisées ! Tu vas être redirigé vers l\'onboarding.');
-              router.replace('/(onboarding)');
-            } catch (err) {
-              console.error('Erreur réinitialisation :', err);
-              Alert.alert('Erreur', 'Impossible de réinitialiser toutes les données.');
-            }
-          },
+          onPress: performReset,
         },
       ]
     );
@@ -140,14 +157,24 @@ export default function SettingsScreen() {
 
   // 4. Déconnexion
   const handleLogout = () => {
+    const doLogout = () => {
+      supabase.auth.signOut();
+      router.replace('/(public)/login');
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Veux-tu vraiment te déconnecter ?')) {
+        doLogout();
+      }
+      return;
+    }
+
     Alert.alert('Déconnexion', 'Veux-tu vraiment te déconnecter ?', [
       { text: 'Annuler', style: 'cancel' },
       {
         text: 'Se déconnecter',
         style: 'destructive',
-        onPress: () => {
-          supabase.auth.signOut();
-        },
+        onPress: doLogout,
       },
     ]);
   };
@@ -407,6 +434,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F6F5F8',
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',

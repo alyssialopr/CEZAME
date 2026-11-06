@@ -1,5 +1,6 @@
+import '../global.css';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StatusBar, useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
@@ -11,7 +12,6 @@ import { TutorialProvider } from '@/providers/TutorialProvider';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useEffect, useRef } from 'react';
-import { usePathname } from 'expo-router';
 import { tracker } from '@/services/trackerService';
 
 function RouteObserver() {
@@ -41,6 +41,7 @@ export default function RootLayout() {
                 <RouteObserver />
                 <AnimatedSplashOverlay />
                 <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
                   <Stack.Screen name="(private)" options={{ headerShown: false }} />
                   <Stack.Screen name="(public)" options={{ headerShown: false }} />
                   <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />

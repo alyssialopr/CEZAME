@@ -17,7 +17,7 @@ import {
   UserRound,
   Zap,
 } from "lucide-react-native";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { supabase } from "@/lib/supabase";
@@ -51,14 +51,24 @@ export default function ProfileScreen() {
   const { requestTutorial } = useTutorial();
 
   const handleLogout = () => {
+    const doLogout = () => {
+      supabase.auth.signOut();
+      router.replace("/(public)/login");
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm("Veux-tu vraiment te déconnecter ?")) {
+        doLogout();
+      }
+      return;
+    }
+
     Alert.alert("Déconnexion", "Veux-tu vraiment te déconnecter ?", [
       { text: "Annuler", style: "cancel" },
       {
         text: "Se déconnecter",
         style: "destructive",
-        onPress: () => {
-          supabase.auth.signOut();
-        },
+        onPress: doLogout,
       },
     ]);
   };
@@ -192,6 +202,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F6F5F8",
+    maxWidth: 600,
+    width: "100%",
+    alignSelf: "center",
   },
   header: {
     flexDirection: "row",

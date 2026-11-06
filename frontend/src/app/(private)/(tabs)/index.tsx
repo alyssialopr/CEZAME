@@ -104,6 +104,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F6F5F8",
+    maxWidth: 600,
+    width: "100%",
+    alignSelf: "center",
   },
 
   header: {
