@@ -181,6 +181,23 @@ describe('aggregateActivity', () => {
     expect(r.engagement).toMatchObject({ onboardingStarted: 2, onboardingCompleted: 1, onboardingRate: 50 });
   });
 
+  it('ne pollue pas Object.prototype avec des clés envoyées par l\'app', () => {
+    const events = ['__proto__', 'constructor', 'prototype'].map((k) => ({
+      event_type: k,
+      event_name: 'question_answered',
+      screen_name: k,
+      user_id: 'u1',
+      created_at: 't',
+      properties: { exerciseType: k, prompt: k, isCorrect: false, categoryId: k },
+    }));
+    const r = aggregateActivity([...events, ...events.map((e) => ({ ...e, event_name: 'category_selected' }))], 'z');
+    expect(({} as any).total).toBeUndefined();
+    expect(({} as any).failed).toBeUndefined();
+    expect(r.exerciseTypeSuccess.map((t) => t.type).sort()).toEqual(['__proto__', 'constructor', 'prototype']);
+    expect(r.mostFailedQuestions).toHaveLength(3);
+    expect(r.categoryStats.find((c) => c.id === '__proto__')?.count).toBe(1);
+  });
+
   it('renvoie des valeurs neutres sans événement', () => {
     const r = aggregateActivity([], 'z');
     expect(r.funnel.completionRate).toBe(0);

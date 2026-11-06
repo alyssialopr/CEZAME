@@ -7,21 +7,27 @@ export interface ActivityEvent {
   created_at: string;
 }
 
+// Les clés viennent des événements envoyés par l'app (noms, prompts, types) :
+// des objets sans prototype évitent qu'une clé comme "__proto__" pollue Object.prototype.
+function dict<T>(): Record<string, T> {
+  return Object.create(null);
+}
+
 export function aggregateActivity(events: ActivityEvent[], todayIso: string) {
-  const screenCounts: Record<string, number> = {};
-  const eventCounts: Record<string, number> = {};
-  const typeCounts: Record<string, number> = {};
+  const screenCounts: Record<string, number> = dict();
+  const eventCounts: Record<string, number> = dict();
+  const typeCounts: Record<string, number> = dict();
   const activeUserSetToday = new Set<string>();
   const allUsersSet = new Set<string>();
 
   // Catégories
-  const categoryClicks: Record<string, number> = {
+  const categoryClicks: Record<string, number> = Object.assign(dict<number>(), {
     sante: 0,
     finance: 0,
     voiture: 0,
     logement: 0,
     administration: 0,
-  };
+  });
   const userFirstCategory: Map<string, string> = new Map();
 
   // Entonnoir (Funnel)
@@ -32,8 +38,8 @@ export function aggregateActivity(events: ActivityEvent[], todayIso: string) {
   let lessonAbandonedQuiz = 0;
 
   // Exercices & Pédagogie
-  const exerciseTypeStats: Record<string, { total: number; correct: number }> = {};
-  const questionFailureStats: Record<string, { prompt: string; categoryId: string; total: number; failed: number }> = {};
+  const exerciseTypeStats: Record<string, { total: number; correct: number }> = dict();
+  const questionFailureStats: Record<string, { prompt: string; categoryId: string; total: number; failed: number }> = dict();
 
   // Onboarding
   let onboardingStartedCount = 0;
@@ -44,7 +50,7 @@ export function aggregateActivity(events: ActivityEvent[], todayIso: string) {
   let durationCount = 0;
 
   // Leçons par utilisateur
-  const userCompletedCount: Record<string, number> = {};
+  const userCompletedCount: Record<string, number> = dict();
 
   // Parcourir les événements (ordre chronologique inverse pour les stats globales)
   const reversedEvents = [...events].reverse();
@@ -151,7 +157,7 @@ export function aggregateActivity(events: ActivityEvent[], todayIso: string) {
   })).sort((a, b) => b.count - a.count);
 
   // First-pick categories
-  const firstPickCounts: Record<string, number> = {};
+  const firstPickCounts: Record<string, number> = dict();
   userFirstCategory.forEach((catId) => {
     firstPickCounts[catId] = (firstPickCounts[catId] || 0) + 1;
   });
