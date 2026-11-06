@@ -93,3 +93,45 @@ describe('POST /api/import-export/lessons', () => {
   // peut donc entrer en collision. À corriger côté route avant d'activer ce test.
   it.todo("calcule order_index sur la catégorie, comme l'impose la contrainte UNIQUE(category_id, order_index)");
 });
+
+describe('POST /api/import-export/lessons/batch', () => {
+  it('exige unité, catégorie et au moins une leçon', async () => {
+    asAdmin();
+    const res = await request(app)
+      .post('/api/import-export/lessons/batch')
+      .set(AUTH)
+      .send({ targetUnitId: 'U1', targetCategoryId: 'sante', lessons: [] });
+    expect(res.status).toBe(400);
+  });
+
+  it('crée chaque leçon à la suite des leçons existantes, avec fiches et questions', async () => {
+    let created = 0;
+    asAdmin((c) => {
+      if (c.table === 'lessons' && has(c, 'order')) return { data: [{ order_index: 4 }] };
+      if (c.table === 'lessons' && has(c, 'insert')) return { data: { id: `NEW${++created}` } };
+    });
+    const res = await request(app)
+      .post('/api/import-export/lessons/batch')
+      .set(AUTH)
+      .send({
+        targetUnitId: 'U1',
+        targetCategoryId: 'sante',
+        lessons: [
+          { title: 'Carte vitale', status: 'published', screens: SCREENS, questions: QUESTIONS },
+          { title: 'Mutuelle', xp_reward: 'abc' },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.count).toBe(2);
+    const inserted = callsTo('lessons').filter((c) => has(c, 'insert')).map((c) => argsOf(c, 'insert')[0]);
+    expect(inserted).toEqual([
+      expect.objectContaining({ title: 'Carte vitale', order_index: 5, status: 'published', xp_reward: 50 }),
+      expect.objectContaining({ title: 'Mutuelle', order_index: 6, status: 'draft', xp_reward: 50 }),
+    ]);
+    const questions = argsOf(callsTo('lesson_questions').find((c) => has(c, 'insert'))!, 'insert')[0];
+    expect(questions.map((q: any) => q.type)).toEqual(['qcm', 'bucket', 'scenario']);
+    expect(questions[1].options).toEqual(QUESTIONS[1].options);
+    expect(argsOf(callsTo('audit_logs')[0], 'insert')[0]).toMatchObject({ action: 'IMPORT_LESSONS_BATCH', target_id: 'U1' });
+  });
+});

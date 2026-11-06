@@ -1,4 +1,5 @@
 import { BottomTabBarProps } from 'expo-router/js-tabs';
+import { useRouter } from 'expo-router';
 import { useRef } from 'react';
 import type { ViewInstance } from 'react-native';
 
@@ -11,6 +12,7 @@ import { useTutorial } from '@/providers/TutorialProvider';
  * S'appuie sur NavBar et relaie la navigation React Navigation.
  */
 export function CustomTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
+  const router = useRouter();
   const barRef = useRef<ViewInstance>(null);
   const { pressTarget } = useTutorial();
   useTutorialTarget('tab-bar', barRef);
@@ -29,6 +31,9 @@ export function CustomTabBar({ state, emitter, navigateToTab }: BottomTabBarProp
     });
     if (activeKey !== key && !event.defaultPrevented) {
       navigateToTab(route.key);
+    } else if (key === 'index' && !event.defaultPrevented) {
+      // Si déjà sur l'accueil, appuyer sur Home ramène à la sélection des 5 thèmes
+      router.push('/categories');
     }
   };
 

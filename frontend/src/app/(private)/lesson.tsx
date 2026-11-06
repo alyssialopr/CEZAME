@@ -1,8 +1,8 @@
 import { Image } from "expo-image";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
-import { Heart, X } from "lucide-react-native";
+import { Heart, HeartCrack, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
+import { Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
@@ -10,6 +10,7 @@ import { TutorialOverlay } from "@/components/tutorial-overlay";
 import { LESSON_CONTENT_SCREENS, LESSON_STEPS } from "@/constants/lesson";
 import { LESSONS, LessonOption, QuestionType } from "@/constants/lessons";
 import { useProgress } from "@/hooks/useProgress";
+import { useRewards } from "@/hooks/useRewards";
 import { useCompleteLesson, useLessonDetails } from "@/hooks/useLessons";
 import { OrderExercise } from "@/components/exercises/OrderExercise";
 import { MatchingExercise } from "@/components/exercises/MatchingExercise";
@@ -17,7 +18,8 @@ import { DocumentExercise } from "@/components/exercises/DocumentExercise";
 import { BucketExercise } from "@/components/exercises/BucketExercise";
 import { ScamExercise } from "@/components/exercises/ScamExercise";
 import { ScenarioExercise } from "@/components/exercises/ScenarioExercise";
-import { DocumentField, BucketData, ScamData, ScenarioData, ScenarioOption } from "@/types/lesson";
+import { GameOverModal } from "@/components/GameOverModal";
+import { DocumentField, BucketData, BucketItem, ScamData, ScenarioData, ScenarioOption } from "@/types/lesson";
 import {
   FALLBACK_BUCKET_DATA,
   isBucketAnswerCorrect,
@@ -26,6 +28,7 @@ import {
 } from "@/lib/exerciseAnswers";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useTutorial } from "@/providers/TutorialProvider";
+import { useHearts } from "@/providers/HeartsProvider";
 import { tracker } from "@/services/trackerService";
 
 export default function LessonScreen() {
@@ -45,8 +48,12 @@ export default function LessonScreen() {
   const [isOrderCorrect, setIsOrderCorrect] = useState(false);
   const [isOrderSubmitted, setIsOrderSubmitted] = useState(false);
   const [isMatchingComplete, setIsMatchingComplete] = useState(false);
-  const [hearts, setHearts] = useState(5);
   const [correctCount, setCorrectCount] = useState(0);
+  const [isGameOverModalOpen, setIsGameOverModalOpen] = useState(false);
+
+  const { hearts, loseHeart, refillWithGems } = useHearts();
+  const heartScaleAnim = useRef(new Animated.Value(1)).current;
+  const { gems } = useRewards();
 
   const completeLessonMutation = useCompleteLesson();
   const insets = useSafeAreaInsets();
@@ -96,8 +103,8 @@ export default function LessonScreen() {
   const questions = lesson.questions || [];
   const question = questions[questionIndex];
   const isLastQuestion = questions.length === 0 || questionIndex === questions.length - 1;
-  const contentScreensCount = lesson.screens?.length || LESSON_CONTENT_SCREENS;
-  const totalSteps = contentScreensCount + (questions.length || 8);
+  const contentScreensCount = lesson.screens?.length || 1;
+  const totalSteps = contentScreensCount + (questions.length || 4);
 
   // 1. Parsing défensif des options (supporte objet, chaîne JSON Supabase/AsyncStorage, ou tableau)
   let rawOptions = question?.options;
@@ -187,80 +194,167 @@ export default function LessonScreen() {
   const progress =
     (contentScreensCount + questionIndex + (isQuestionAnswered ? 1 : 0)) / totalSteps;
 
+  function triggerHeartLossFeedback() {
+    Animated.sequence([
+      Animated.timing(heartScaleAnim, {
+        toValue: 1.35,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(heartScaleAnim, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }
+
+  // Dès que les cœurs tombent à 0, bloquer immédiatement la leçon
+  useEffect(() => {
+    if (hearts <= 0) {
+      setIsGameOverModalOpen(true);
+    }
+  }, [hearts]);
+
+  async function handleMistake() {
+    triggerHeartLossFeedback();
+    const remaining = await loseHeart();
+    if (remaining <= 0) {
+      setIsGameOverModalOpen(true);
+    }
+  }
+
+  function trackAnswer(isCorrect: boolean) {
+    tracker.trackLessonEvent('question_answered', effectiveLessonId, {
+      categoryId,
+      questionIndex,
+      exerciseType,
+      prompt: question?.prompt ? question.prompt.slice(0, 100) : `Question ${questionIndex + 1}`,
+      isCorrect,
+      remainingHearts: hearts - (isCorrect ? 0 : 1),
+    });
+  }
+
   function handleSelect(option: LessonOption) {
+    if (hearts <= 0) {
+      setIsGameOverModalOpen(true);
+      return;
+    }
     if (selectedLetter) return;
     // Répondre à une question termine le tuto (dernière étape).
     pressTarget("lesson-question");
     setSelectedLetter(option.letter || 'A');
-    if (option.correct) {
+    const isCorrect = Boolean(option.correct);
+    trackAnswer(isCorrect);
+    if (isCorrect) {
       setCorrectCount((c) => c + 1);
     } else {
-      setHearts((h) => Math.max(0, h - 1));
+      handleMistake();
     }
   }
 
   function handleSelectDocumentField(field: DocumentField) {
+    if (hearts <= 0) {
+      setIsGameOverModalOpen(true);
+      return;
+    }
     if (selectedDocumentFieldId) return;
     pressTarget("lesson-question");
     setSelectedDocumentFieldId(field.id);
-    if (field.correct) {
+    const isCorrect = Boolean(field.correct);
+    trackAnswer(isCorrect);
+    if (isCorrect) {
       setCorrectCount((c) => c + 1);
     } else {
-      setHearts((h) => Math.max(0, h - 1));
+      handleMistake();
     }
   }
 
   function handleVerifyOrder() {
+    if (hearts <= 0) {
+      setIsGameOverModalOpen(true);
+      return;
+    }
     pressTarget("lesson-question");
     setIsOrderSubmitted(true);
+    trackAnswer(isOrderCorrect);
     if (isOrderCorrect) {
       setCorrectCount((c) => c + 1);
     } else {
-      setHearts((h) => Math.max(0, h - 1));
+      handleMistake();
     }
   }
 
   function handleBucketAssign(itemId: string, bucketId: string) {
+    if (hearts <= 0) {
+      setIsGameOverModalOpen(true);
+      return;
+    }
     if (isBucketSubmitted) return;
     setBucketAssignments((prev) => ({ ...prev, [itemId]: bucketId }));
   }
 
   function handleVerifyBucket() {
+    if (hearts <= 0) {
+      setIsGameOverModalOpen(true);
+      return;
+    }
     pressTarget("lesson-question");
     const allCorrect = isBucketAnswerCorrect(bucketItems, bucketAssignments);
     setIsBucketCorrect(allCorrect);
     setIsBucketSubmitted(true);
+    trackAnswer(allCorrect);
     if (allCorrect) {
       setCorrectCount((c) => c + 1);
     } else {
-      setHearts((h) => Math.max(0, h - 1));
+      handleMistake();
     }
   }
 
   function handleScamChoice(choseScam: boolean) {
+    if (hearts <= 0) {
+      setIsGameOverModalOpen(true);
+      return;
+    }
     if (scamUserChoice !== null) return;
     pressTarget("lesson-question");
     setScamUserChoice(choseScam);
-    if (isScamAnswerCorrect(scamData, choseScam)) {
+    const isCorrect = isScamAnswerCorrect(scamData, choseScam);
+    trackAnswer(isCorrect);
+    if (isCorrect) {
       setCorrectCount((c) => c + 1);
     } else {
-      setHearts((h) => Math.max(0, h - 1));
+      handleMistake();
     }
   }
 
   function handleScenarioSelect(option: ScenarioOption) {
+    if (hearts <= 0) {
+      setIsGameOverModalOpen(true);
+      return;
+    }
     if (selectedScenarioOptionId !== null) return;
     pressTarget("lesson-question");
     setSelectedScenarioOptionId(option.id);
-    if (option.correct) {
+    const isCorrect = Boolean(option.correct);
+    trackAnswer(isCorrect);
+    if (isCorrect) {
       setCorrectCount((c) => c + 1);
     } else {
-      setHearts((h) => Math.max(0, h - 1));
+      handleMistake();
     }
   }
 
   async function handleContinue() {
     if (!isQuestionAnswered) return;
+
+    // Si les coeurs sont épuisés, bloquer la progression et afficher le modal de Game Over
+    if (hearts <= 0) {
+      setIsGameOverModalOpen(true);
+      return;
+    }
+
     if (isLastQuestion) {
       tracker.trackLessonEvent('lesson_completed', effectiveLessonId, {
         categoryId,
@@ -292,13 +386,36 @@ export default function LessonScreen() {
     setQuestionIndex((i) => i + 1);
   }
 
+  async function handleRefillWithGems() {
+    const success = await refillWithGems();
+    if (success) {
+      setIsGameOverModalOpen(false);
+    }
+  }
+
+  function handleRestartLesson() {
+    setIsGameOverModalOpen(false);
+    setQuestionIndex(0);
+    setCorrectCount(0);
+    setSelectedLetter(null);
+    setSelectedDocumentFieldId(null);
+    setBucketAssignments({});
+    setIsBucketSubmitted(false);
+    setIsBucketCorrect(false);
+    setScamUserChoice(null);
+    setSelectedScenarioOptionId(null);
+    setIsOrderSubmitted(false);
+    setIsOrderCorrect(false);
+    setIsMatchingComplete(false);
+  }
+
   function handleExit() {
     tracker.trackLessonEvent('lesson_abandoned', effectiveLessonId, {
       categoryId,
       questionIndex,
       remainingHearts: hearts,
     });
-    router.replace("/(private)/(tabs)");
+    router.replace("/(private)/(tabs)" as any);
   }
 
   return (
@@ -312,10 +429,14 @@ export default function LessonScreen() {
           <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
         </View>
 
-        <View style={styles.hearts}>
-          <Heart color="#FF4B6E" size={20} />
-          <Text testID="lesson-hearts" style={styles.heartsText}>{hearts}</Text>
-        </View>
+        <Animated.View style={[styles.hearts, { transform: [{ scale: heartScaleAnim }] }]}>
+          <Heart
+            color={hearts === 0 ? "#AFAFB8" : "#FF4B6E"}
+            fill={hearts === 0 ? "#E5E5E5" : "#FF4B6E"}
+            size={20}
+          />
+          <Text testID="lesson-hearts" style={[styles.heartsText, hearts === 0 && styles.heartsTextEmpty]}>{hearts}</Text>
+        </Animated.View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -347,9 +468,7 @@ export default function LessonScreen() {
                 setIsMatchingComplete(true);
                 setCorrectCount((c) => c + 1);
               }}
-              onMistake={() => {
-                setHearts((h) => Math.max(0, h - 1));
-              }}
+              onMistake={handleMistake}
             />
           </View>
         ) : exerciseType === 'document' ? (
@@ -436,6 +555,18 @@ export default function LessonScreen() {
             <Text style={styles.explanationText}>{question.explanation}</Text>
           </View>
         )}
+
+        {hearts === 0 && (
+          <View style={styles.emptyHeartsBanner}>
+            <HeartCrack size={22} color="#EF4444" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.emptyHeartsTitle}>Plus de vies !</Text>
+              <Text style={styles.emptyHeartsSubtitle}>
+                Tu as épuisé tes 5 cœurs. Recharge tes vies avec tes diamants ou recommence la leçon pour continuer.
+              </Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {exerciseType === 'order' && !isOrderSubmitted ? (
@@ -466,13 +597,25 @@ export default function LessonScreen() {
             styles.continueButton,
             { marginBottom: insets.bottom + 12 },
             !isQuestionAnswered && styles.continueButtonDisabled,
+            hearts === 0 && styles.continueButtonGameOver,
           ]}
           testID="lesson-continue"
           disabled={!isQuestionAnswered}
           onPress={handleContinue}>
-          <Text style={styles.continueText}>CONTINUER</Text>
+          <Text style={[styles.continueText, hearts === 0 && styles.continueTextGameOver]}>
+            {hearts === 0 ? "RECHARGER MES VIES" : "CONTINUER"}
+          </Text>
         </TouchableOpacity>
       )}
+
+      {/* MODAL DE GAME OVER QUAND LES COEURS SONT À ZÉRO */}
+      <GameOverModal
+        visible={isGameOverModalOpen}
+        gems={gems}
+        onRefillWithGems={handleRefillWithGems}
+        onRestartLesson={handleRestartLesson}
+        onExit={handleExit}
+      />
 
       {/* L'écran leçon est un fullScreenModal : l'overlay racine peut passer
           derrière le modal sur iOS, on le rend donc aussi ici. */}
@@ -486,6 +629,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FBFAF8",
     paddingHorizontal: 20,
+    maxWidth: 440,
+    width: "100%",
+    alignSelf: "center",
   },
   header: {
     flexDirection: "row",
@@ -504,6 +650,7 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 6,
     backgroundColor: "#A8EA73",
+    ...(Platform.OS === 'web' ? ({ transition: "width 0.35s ease-out" } as any) : {}),
   },
   hearts: {
     flexDirection: "row",
@@ -620,9 +767,43 @@ const styles = StyleSheet.create({
   continueButtonDisabled: {
     backgroundColor: "#E7E7E7",
   },
+  continueButtonGameOver: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#EF4444",
+    borderWidth: 2,
+  },
   continueText: {
     fontWeight: "700",
     fontSize: 16,
     color: "#3A6F1E",
+  },
+  continueTextGameOver: {
+    color: "#DC2626",
+    fontWeight: "900",
+  },
+  heartsTextEmpty: {
+    color: "#AFAFB8",
+  },
+  emptyHeartsBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+    borderWidth: 1.5,
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 16,
+  },
+  emptyHeartsTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#B91C1C",
+    marginBottom: 2,
+  },
+  emptyHeartsSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#7F1D1D",
   },
 });

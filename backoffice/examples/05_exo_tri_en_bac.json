@@ -1,0 +1,68 @@
+{
+  "version": "1.0",
+  "lesson": {
+    "title": "Exemple 05 - Tri en Bacs",
+    "xp_reward": 50,
+    "screens": [
+      {
+        "title": "La méthode budgétaire 50/30/20",
+        "body": "Pour équilibrer ses finances sans frustration, la règle 50/30/20 répartit tes revenus mensuels en 3 grands piliers : 50% pour les charges indispensables (logement, nourriture), 30% pour les envies et loisirs, et 20% pour l'épargne.",
+        "tip": "Bon réflexe : Mets en place un virement automatique de ton épargne dès le lendemain du versement de ton salaire."
+      }
+    ],
+    "questions": [
+      {
+        "type": "bucket",
+        "category": "La règle 50/30/20",
+        "prompt": "Classe chaque dépense dans son bac budgétaire correspondant :",
+        "options": {
+          "buckets": [
+            {
+              "id": "b1",
+              "label": "Besoins (50%)",
+              "color": "#3B82F6"
+            },
+            {
+              "id": "b2",
+              "label": "Envies (30%)",
+              "color": "#8B5CF6"
+            },
+            {
+              "id": "b3",
+              "label": "Épargne (20%)",
+              "color": "#10B981"
+            }
+          ],
+          "items": [
+            {
+              "id": "1",
+              "text": "Loyer et électricité",
+              "bucketId": "b1"
+            },
+            {
+              "id": "2",
+              "text": "Sorties restaurant et cinéma",
+              "bucketId": "b2"
+            },
+            {
+              "id": "3",
+              "text": "Virement mensuel sur Livret A",
+              "bucketId": "b3"
+            },
+            {
+              "id": "4",
+              "text": "Courses alimentaires de base",
+              "bucketId": "b1"
+            },
+            {
+              "id": "5",
+              "text": "Abonnement plateforme streaming",
+              "bucketId": "b2"
+            }
+          ]
+        },
+        "explanation": "50% pour les dépenses vitales (loyer, alimentation), 30% pour les plaisirs de la vie quotidienne, et 20% pour sécuriser ton avenir financier !"
+      }
+    ]
+  }
+}

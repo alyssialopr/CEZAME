@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "lesson": {
+    "title": "Exemple 02 - Remettre dans l'ordre",
+    "xp_reward": 50,
+    "screens": [
+      {
+        "title": "Le parcours de soins en France",
+        "body": "Pour être remboursé au maximum par l'Assurance maladie (70% du tarif conventionné), tu dois respecter le parcours de soins coordonnés. Cela implique de consulter d'abord ton médecin traitant déclaré avant d'aller voir un spécialiste.",
+        "tip": "Bon réflexe : Certains spécialistes (ophtalmologue, gynécologue, dentiste) sont accessibles directement sans passer par le médecin traitant."
+      }
+    ],
+    "questions": [
+      {
+        "type": "order",
+        "category": "Parcours de soins",
+        "prompt": "Remets dans le bon ordre les étapes pour te soigner et être remboursé :",
+        "options": [
+          {
+            "id": "1",
+            "text": "Prendre rendez-vous avec ton médecin traitant déclaré"
+          },
+          {
+            "id": "2",
+            "text": "Présenter ta carte Vitale en début de consultation"
+          },
+          {
+            "id": "3",
+            "text": "Régler la consultation ou bénéficier du tiers-payant"
+          },
+          {
+            "id": "4",
+            "text": "Télétransmission automatique : remboursement Sécu puis Mutuelle"
+          }
+        ],
+        "explanation": "En déclarant un médecin traitant et en présentant ta carte Vitale, la télétransmission est automatique et le taux de remboursement est maximal (70% Sécu + part Mutuelle)."
+      }
+    ]
+  }
+}

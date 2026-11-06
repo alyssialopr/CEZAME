@@ -190,8 +190,53 @@ export interface ActivityStats {
   totalEvents: number;
   eventsToday: number;
   activeUsersToday: number;
+  totalUsers: number;
   topScreens: { screen: string; count: number }[];
   topEvents: { event: string; count: number }[];
   eventsByType: { type: string; count: number }[];
+  categoryStats: {
+    id: string;
+    label: string;
+    color: string;
+    count: number;
+    percentage: number;
+  }[];
+  firstPickStats: {
+    id: string;
+    label: string;
+    color: string;
+    count: number;
+  }[];
+  funnel: {
+    opened: number;
+    quizStarted: number;
+    completed: number;
+    abandonedTheory: number;
+    abandonedQuiz: number;
+    transitionToQuizRate: number;
+    completionRate: number;
+    openedPercent: number;
+    quizStartedPercent: number;
+    completedPercent: number;
+  };
+  exerciseTypeSuccess: {
+    type: string;
+    total: number;
+    correct: number;
+    rate: number;
+  }[];
+  mostFailedQuestions: {
+    prompt: string;
+    categoryId: string;
+    failedCount: number;
+    failureRate: number;
+  }[];
+  engagement: {
+    avgLessonsPerUser: number;
+    avgLessonMinutes: number;
+    onboardingStarted: number;
+    onboardingCompleted: number;
+    onboardingRate: number;
+  };
 }
 

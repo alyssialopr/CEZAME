@@ -48,6 +48,18 @@ export class BackofficeApiMock {
       this.lessons.push(lesson);
       return { json: { success: true, message: 'Leçon importée avec succès en statut brouillon !', lessonId: lesson.id } };
     });
+    this.on('POST /import-export/lessons/batch', (body) => {
+      if (!body.targetUnitId || !body.targetCategoryId || !body.lessons?.length) {
+        return { status: 400, json: { error: 'targetUnitId, targetCategoryId et tableau lessons requis et non vide' } };
+      }
+      const created = body.lessons.map((l: any, i: number) => ({
+        id: `lesson-batch-${i + 1}`, unit_id: body.targetUnitId, category_id: body.targetCategoryId,
+        title: l.title, xp_reward: l.xp_reward ?? 50, order_index: this.lessons.length + i + 1, status: l.status ?? 'draft',
+        screensCount: l.screens?.length ?? 0, questionsCount: l.questions?.length ?? 0,
+      }));
+      this.lessons.push(...created);
+      return { json: { success: true, count: created.length, lessons: created } };
+    });
     this.on('GET /content/lessons/lesson-imported', () => ({ json: this.lessons.find((l) => l.id === 'lesson-imported') }));
   }
 

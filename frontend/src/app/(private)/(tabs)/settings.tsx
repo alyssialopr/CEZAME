@@ -36,6 +36,7 @@ import {
 import { useAuth } from '@/providers/AuthProvider';
 import { useTutorial } from '@/providers/TutorialProvider';
 import { useProgress } from '@/hooks/useProgress';
+import { useRewards } from '@/hooks/useRewards';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsScreen() {
@@ -44,6 +45,7 @@ export default function SettingsScreen() {
   const { session, user } = useAuth();
   const { data: progress } = useProgress();
   const { requestTutorial } = useTutorial();
+  const { resetRewards } = useRewards();
 
   // Préférences utilisateur (états locaux pour le test)
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -61,7 +63,10 @@ export default function SettingsScreen() {
   // 1. Réinitialisation complète pour les sessions de tests utilisateurs
   const performReset = async () => {
     try {
-      // Effacer les clés locales AsyncStorage
+      // Réinitialiser les récompenses (diamants, coffres et badges)
+      await resetRewards();
+
+      // Effacer toutes les clés locales AsyncStorage
       const allKeys = await AsyncStorage.getAllKeys();
       const keysToRemove = allKeys.filter(
         (k) =>
@@ -73,20 +78,47 @@ export default function SettingsScreen() {
         await AsyncStorage.multiRemove(keysToRemove);
       }
 
-      // Si connecté sur Supabase, remettre à zéro
+      // Si connecté sur Supabase, remettre à zéro la totalité des tables
       if (session?.user?.id) {
+        const userId = session.user.id;
+
+        // 1. Supprimer toute la progression des leçons
+        await supabase.from('user_lesson_progress').delete().eq('user_id', userId);
+
+        // 2. Supprimer les journaux d'événements
+        await supabase.from('user_events').delete().eq('user_id', userId);
+
+        // 3. Supprimer les réponses des démarches d'onboarding
+        const { data: prog } = await supabase
+          .from('progress')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (prog?.id) {
+          await Promise.allSettled([
+            supabase.from('social_security').delete().eq('progress_id', prog.id),
+            supabase.from('bank_account').delete().eq('progress_id', prog.id),
+            supabase.from('driver_licence').delete().eq('progress_id', prog.id),
+            supabase.from('tax_return').delete().eq('progress_id', prog.id),
+            supabase.from('housing').delete().eq('progress_id', prog.id),
+          ]);
+        }
+
+        // 4. Remettre à zéro le statut d'onboarding
         await supabase
           .from('users')
           .update({ is_onboarding_completed: false })
-          .eq('id', session.user.id);
+          .eq('id', userId);
 
+        // 5. Remettre à zéro l'XP et le streak
         await supabase
           .from('progress')
           .update({ streak: 0, xp: 0, rank: 'bronze' })
-          .eq('user_id', session.user.id);
+          .eq('user_id', userId);
 
         // Mettre à jour le cache queryClient
-        queryClient.setQueryData(['userProfile', session.user.id], (old: any) =>
+        queryClient.setQueryData(['userProfile', userId], (old: any) =>
           old ? { ...old, is_onboarding_completed: false } : null
         );
       }
@@ -135,7 +167,7 @@ export default function SettingsScreen() {
   // 2. Revoir le tutoriel pas à pas
   const handleReplayTutorial = () => {
     requestTutorial();
-    router.replace('/(private)/categories');
+    router.replace('/categories');
   };
 
   // 3. Soumission du feedback utilisateur
@@ -159,7 +191,7 @@ export default function SettingsScreen() {
   const handleLogout = () => {
     const doLogout = () => {
       supabase.auth.signOut();
-      router.replace('/(public)/login');
+      router.replace('/login');
     };
 
     if (Platform.OS === 'web') {

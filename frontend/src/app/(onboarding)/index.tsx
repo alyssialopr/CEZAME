@@ -15,6 +15,8 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import Animated, { FadeInRight, FadeOutLeft, LinearTransition, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import { tracker } from '@/services/trackerService';
+import { useEffect } from 'react';
 
 export default function OnboardingScreen() {
   const { session } = useAuth();
@@ -53,6 +55,10 @@ export default function OnboardingScreen() {
     }
   };
 
+  useEffect(() => {
+    tracker.track('onboarding_started', { eventType: 'onboarding' });
+  }, []);
+
   const finishOnboarding = async () => {
     if (!session?.user?.id) return;
     setIsSubmitting(true);
@@ -68,6 +74,10 @@ export default function OnboardingScreen() {
       queryClient.invalidateQueries({ queryKey: ['userProfile', session.user.id] });
       // Demande le tuto dès la fin de l'onboarding (démarrera sur le home).
       requestTutorial();
+      tracker.track('onboarding_completed', {
+        eventType: 'onboarding',
+        properties: { score, weakCategories: weakCategoryIds },
+      });
       setIsCompleted(true);
     } catch (err) {
       console.error(err);

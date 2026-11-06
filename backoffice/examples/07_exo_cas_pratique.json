@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "lesson": {
+    "title": "Exemple 07 - Cas Pratique",
+    "xp_reward": 50,
+    "screens": [
+      {
+        "title": "Anticiper et gérer les imprévus financiers",
+        "body": "Dans la vie quotidienne, une facture imprévue ou une panne d'électroménager peut bousculer un budget serré. Adopter la bonne stratégie avec ses créanciers évite l'engrenage des agios bancaires et des pénalités de retard.",
+        "tip": "Bon réflexe : Prévenir son créancier avant la date d'échéance permet presque toujours d'obtenir un décalage de prélèvement sans frais."
+      }
+    ],
+    "questions": [
+      {
+        "type": "scenario",
+        "category": "Cas pratique budget",
+        "prompt": "Aide Maxime à résoudre son imprévu financier de fin de mois.",
+        "options": {
+          "context": "Maxime, 21 ans, est étudiant et apprenti. Il lui reste 35 € sur son compte en banque alors que sa paie tombe dans 10 jours. Sa machine à laver vient de lâcher et une facture d'électricité de 55 € arrive dans 3 jours.",
+          "persona": {
+            "name": "Maxime",
+            "role": "Apprenti 21 ans"
+          },
+          "keyFacts": [
+            {
+              "label": "Solde compte",
+              "value": "35 €"
+            },
+            {
+              "label": "Facture énergie",
+              "value": "55 €"
+            },
+            {
+              "label": "Délai paie",
+              "value": "10 jours"
+            }
+          ],
+          "options": [
+            {
+              "id": "opt1",
+              "text": "Demander un report d'échéance au fournisseur et utiliser une laverie le temps d'être payé",
+              "correct": true,
+              "consequence": "Super réflexe ! Les fournisseurs d'énergie décalent facilement un prélèvement sans frais si on prévient avant, et la laverie dépanne à moindre coût."
+            },
+            {
+              "id": "opt2",
+              "text": "Laisser le prélèvement passer et acheter une machine neuve à crédit en magasin",
+              "correct": false,
+              "consequence": "Attention : le prélèvement sera rejeté avec environ 20 € de frais bancaires d'agios, et le crédit aggravera le budget du mois prochain."
+            },
+            {
+              "id": "opt3",
+              "text": "Souscrire un mini-prêt express à 20% d'intérêts sur Internet",
+              "correct": false,
+              "consequence": "Piège coûteux : les taux de ces crédits rapides sont disproportionnés et créent un engrenage de dettes."
+            }
+          ]
+        },
+        "explanation": "Anticiper et communiquer avec ses créanciers avant la date d'échéance évite les frais de rejet et l'endettement."
+      }
+    ]
+  }
+}

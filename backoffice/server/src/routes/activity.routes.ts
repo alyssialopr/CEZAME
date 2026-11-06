@@ -126,30 +126,24 @@ router.get('/stats', requireAuth, async (_req: AuthenticatedRequest, res) => {
       .select('*', { count: 'exact', head: true })
       .gte('created_at', todayIso);
 
-    // 3. Récupérer un échantillon récent pour les top screens et events
+    // 3. Récupérer un échantillon récent pour calculer l'ensemble des analytics
     const { data: recentEvents, error } = await supabaseAdmin
       .from('user_events')
-      .select('event_type, event_name, screen_name, user_id, created_at')
+      .select('event_type, event_name, screen_name, properties, user_id, created_at')
       .order('created_at', { ascending: false })
-      .limit(1000);
+      .limit(3000);
 
     if (error) {
       res.status(500).json({ error: error.message });
       return;
     }
 
-    const { activeUsersToday, topScreens, topEvents, eventsByType } = aggregateActivity(
-      recentEvents || [],
-      todayIso
-    );
+    const stats = aggregateActivity(recentEvents || [], todayIso);
 
     res.json({
       totalEvents: totalEvents || 0,
       eventsToday: eventsToday || 0,
-      activeUsersToday,
-      topScreens,
-      topEvents,
-      eventsByType,
+      ...stats,
     });
   } catch (err: any) {
     console.error('Erreur stats activity:', err);

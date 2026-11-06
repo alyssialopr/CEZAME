@@ -1,6 +1,6 @@
 import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '@/providers/AuthProvider';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { useUser } from '@/hooks/useUser';
 
 export default function PrivateLayout() {
@@ -16,7 +16,7 @@ export default function PrivateLayout() {
   }
 
   if (!session) {
-    return <Redirect href="/(public)/login" />;
+    return <Redirect href="/login" />;
   }
 
   if (userProfile && !userProfile.is_onboarding_completed) {
@@ -26,8 +26,17 @@ export default function PrivateLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="lesson-content" options={{ presentation: 'fullScreenModal' }} />
-      <Stack.Screen name="lesson" options={{ presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="categories" />
+      <Stack.Screen name="score" />
+      <Stack.Screen name="category/[id]" />
+      <Stack.Screen
+        name="lesson-content"
+        options={{ presentation: Platform.OS === 'web' ? 'card' : 'fullScreenModal' }}
+      />
+      <Stack.Screen
+        name="lesson"
+        options={{ presentation: Platform.OS === 'web' ? 'card' : 'fullScreenModal' }}
+      />
     </Stack>
   );
 }

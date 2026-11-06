@@ -580,6 +580,69 @@ router.post('/lessons/:id/questions', async (req: AuthenticatedRequest, res) => 
   }
 });
 
+router.post('/lessons/:id/questions/batch', async (req: AuthenticatedRequest, res) => {
+  try {
+    const lesson_id = String(req.params.id);
+    const { questions, replace = false } = req.body;
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      res.status(400).json({ error: 'Liste de questions requise et non vide' });
+      return;
+    }
+
+    if (replace) {
+      await supabaseAdmin.from('lesson_questions').delete().eq('lesson_id', lesson_id);
+    }
+
+    let startOrder = 1;
+    if (!replace) {
+      const { data: existing } = await supabaseAdmin
+        .from('lesson_questions')
+        .select('order_index')
+        .eq('lesson_id', lesson_id)
+        .order('order_index', { ascending: false })
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        startOrder = (existing[0].order_index || 0) + 1;
+      }
+    }
+
+    const toInsert = questions.map((q: any, idx: number) => ({
+      lesson_id,
+      type: q.type || 'qcm',
+      category: q.category || 'Quiz',
+      prompt: q.prompt,
+      options: q.options || [],
+      explanation: q.explanation || '',
+      order_index: startOrder + idx,
+    }));
+
+    const { data, error } = await supabaseAdmin
+      .from('lesson_questions')
+      .insert(toInsert)
+      .select();
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+
+    await logAudit({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email,
+      action: 'IMPORT_QUESTIONS',
+      targetType: 'lesson',
+      targetId: lesson_id,
+      details: { count: toInsert.length, replace },
+    });
+
+    res.json({ success: true, count: data?.length || 0, questions: data || [] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.put('/questions/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const id = String(req.params.id);

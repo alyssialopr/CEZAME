@@ -49,7 +49,7 @@ export default function SignupScreen() {
           <Text style={styles.subtitle}>Crée ton compte CEZAME</Text>
         </View>
 
-        <Link href="/(public)/login" asChild>
+          <Link href="/login" asChild>
           <TouchableOpacity style={styles.testerBanner}>
             <FlaskConical size={16} color="#1D8271" />
             <Text style={styles.testerBannerText}>
@@ -110,7 +110,7 @@ export default function SignupScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Déjà un compte ?</Text>
-          <Link href="/(public)/login" asChild>
+            <Link href="/login" asChild>
             <TouchableOpacity>
               <Text style={styles.footerLink}>Se connecter</Text>
             </TouchableOpacity>

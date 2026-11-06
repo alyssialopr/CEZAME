@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "lesson": {
+    "title": "Exemple 04 - Décryptage de Document",
+    "xp_reward": 50,
+    "screens": [
+      {
+        "title": "Savoir lire son bulletin de salaire",
+        "body": "Une fiche de paie contient de nombreuses lignes chiffrées : salaire brut, charges patronales, cotisations salariales, net fiscal et net payé. Identifier la bonne ligne est indispensable pour gérer son budget ou déclarer ses impôts.",
+        "tip": "Bon réflexe : Conserve toutes tes fiches de paie sans limite de durée, elles te serviront pour justifier de tes droits à la retraite."
+      }
+    ],
+    "questions": [
+      {
+        "type": "document",
+        "category": "Fiche de paie",
+        "prompt": "Sur ce bulletin de paie, touche la ligne qui indique la somme réelle virée sur ton compte bancaire :",
+        "options": [
+          {
+            "id": "1",
+            "label": "Salaire brut mensuel (35h)",
+            "value": "2 050,00 €",
+            "correct": false
+          },
+          {
+            "id": "2",
+            "label": "Total cotisations sociales salariales",
+            "value": "- 435,20 €",
+            "correct": false
+          },
+          {
+            "id": "3",
+            "label": "Net à payer avant impôt sur le revenu",
+            "value": "1 614,80 €",
+            "correct": false
+          },
+          {
+            "id": "4",
+            "label": "Net payé en euros (Virement bancaire)",
+            "value": "1 614,80 €",
+            "correct": true
+          }
+        ],
+        "explanation": "La ligne 'Net payé en euros' correspond à la somme effectivement transférée sur ton compte en banque."
+      }
+    ]
+  }
+}

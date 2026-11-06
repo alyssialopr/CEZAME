@@ -54,7 +54,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'lesson-node',
     screen: 'home',
-    text: 'Appuie sur START pour lancer ta première leçon.',
+    text: 'Appuie sur COMMENCER pour lancer ta première leçon.',
     placement: 'above',
     cutoutPadding: 8,
     // cutoutOffsetY: 2,

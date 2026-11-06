@@ -114,8 +114,78 @@ describe('aggregateActivity', () => {
     const r = aggregateActivity(events, today);
     expect(r.activeUsersToday).toBe(2);
     expect(r.topScreens).toEqual([{ screen: 'login', count: 2 }, { screen: 'lesson', count: 1 }]);
-    expect(r.topEvents[0]).toEqual({ event: 'view', count: 2 });
-    expect(r.eventsByType).toEqual([{ type: 'screen_view', count: 2 }, { type: 'click', count: 2 }]);
+    expect(r.totalUsers).toBe(3);
+    expect(r.topEvents).toEqual(expect.arrayContaining([{ event: 'view', count: 2 }, { event: 'tap', count: 2 }]));
+    expect(r.eventsByType).toEqual(
+      expect.arrayContaining([{ type: 'screen_view', count: 2 }, { type: 'click', count: 2 }])
+    );
+  });
+
+  // Les événements arrivent du plus récent au plus ancien (order desc côté route).
+  const ev = (event_name: string, user_id: string, created_at: string, properties: Record<string, any> = {}) => ({
+    event_type: 'lesson',
+    event_name,
+    user_id,
+    created_at,
+    properties,
+  });
+
+  it("calcule l'entonnoir leçon → quiz → complétion et la durée moyenne", () => {
+    const events = [
+      ev('lesson_completed', 'u1', '2026-11-06T10:05:00Z', { durationSeconds: 300 }),
+      ev('quiz_started', 'u1', '2026-11-06T10:02:00Z'),
+      ev('lesson_abandoned', 'u2', '2026-11-06T09:03:00Z', { stage: 'quiz' }),
+      ev('quiz_started', 'u2', '2026-11-06T09:02:00Z'),
+      ev('lesson_abandoned', 'u3', '2026-11-06T08:01:00Z'),
+      ev('lesson_opened', 'u3', '2026-11-06T08:00:00Z', { categoryId: 'sante' }),
+      ev('lesson_opened', 'u2', '2026-11-06T09:00:00Z', { categoryId: 'finance' }),
+      ev('lesson_opened', 'u1', '2026-11-06T10:00:00Z', { categoryId: 'finance' }),
+    ];
+    const r = aggregateActivity(events, '2026-11-06T00:00:00.000Z');
+    expect(r.funnel).toMatchObject({
+      opened: 3,
+      quizStarted: 2,
+      completed: 1,
+      abandonedTheory: 1,
+      abandonedQuiz: 1,
+      transitionToQuizRate: 67,
+      completionRate: 33,
+    });
+    expect(r.engagement.avgLessonMinutes).toBe(5);
+    expect(r.engagement.avgLessonsPerUser).toBe(0.3);
+    expect(r.categoryStats[0]).toMatchObject({ id: 'finance', label: 'Finance', count: 2, percentage: 67 });
+    expect(r.firstPickStats).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'finance', count: 2 }),
+        expect.objectContaining({ id: 'sante', count: 1 }),
+      ])
+    );
+  });
+
+  it('mesure la réussite par type et classe les questions les plus ratées', () => {
+    const events = [
+      ev('question_answered', 'u1', 't', { exerciseType: 'scam', isCorrect: false, prompt: 'Arnaque ?' }),
+      ev('question_answered', 'u2', 't', { exerciseType: 'scam', isCorrect: false, prompt: 'Arnaque ?' }),
+      ev('question_answered', 'u3', 't', { exerciseType: 'scam', isCorrect: true, prompt: 'Arnaque ?' }),
+      ev('question_answered', 'u1', 't', { isCorrect: true }),
+      ev('onboarding_started', 'u1', 't'),
+      ev('onboarding_started', 'u2', 't'),
+      ev('onboarding_completed', 'u1', 't'),
+    ];
+    const r = aggregateActivity(events, 'z');
+    expect(r.exerciseTypeSuccess).toEqual([
+      { type: 'scam', total: 3, correct: 1, rate: 33 },
+      { type: 'qcm', total: 1, correct: 1, rate: 100 },
+    ]);
+    expect(r.mostFailedQuestions[0]).toMatchObject({ prompt: 'Arnaque ?', failedCount: 2 });
+    expect(r.engagement).toMatchObject({ onboardingStarted: 2, onboardingCompleted: 1, onboardingRate: 50 });
+  });
+
+  it('renvoie des valeurs neutres sans événement', () => {
+    const r = aggregateActivity([], 'z');
+    expect(r.funnel.completionRate).toBe(0);
+    expect(r.engagement).toMatchObject({ avgLessonMinutes: 2.5, onboardingRate: 100 });
+    expect(r.mostFailedQuestions).toEqual([]);
   });
 
   it('limite les tops à 5 écrans et 6 événements', () => {

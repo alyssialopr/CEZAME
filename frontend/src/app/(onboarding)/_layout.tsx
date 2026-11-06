@@ -16,7 +16,7 @@ export default function OnboardingLayout() {
   }
 
   if (!session) {
-    return <Redirect href="/(public)/login" />;
+    return <Redirect href="/login" />;
   }
 
   // NB : pas de redirection sur `is_onboarding_completed` ici — l'écran d'onboarding

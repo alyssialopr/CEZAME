@@ -174,7 +174,7 @@ export default function LoginScreen() {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Pas encore de compte classique ?</Text>
-              <Link href={"/(public)/signup" as RelativePathString} asChild>
+              <Link href="/signup" asChild>
                 <TouchableOpacity>
                   <Text style={styles.footerLink}>S'inscrire</Text>
                 </TouchableOpacity>

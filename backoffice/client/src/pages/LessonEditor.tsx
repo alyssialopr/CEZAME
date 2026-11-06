@@ -30,7 +30,9 @@ import {
   Layers,
   ShieldAlert,
   Briefcase,
+  Upload,
 } from 'lucide-react';
+import { ImportQuestionsModal } from '../components/modals/ImportQuestionsModal.js';
 
 export const LessonEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -89,6 +91,9 @@ export const LessonEditor: React.FC = () => {
       { letter: 'C', text: '', correct: false },
     ],
   });
+
+  // Modal Import Questions (Fichiers)
+  const [importQuestionsModalOpen, setImportQuestionsModalOpen] = useState(false);
 
   // Confirm delete
   const [deleteScreenTarget, setDeleteScreenTarget] = useState<LessonScreen | null>(null);
@@ -579,22 +584,35 @@ export const LessonEditor: React.FC = () => {
               </div>
 
               {/* BARRE D'ACTION DE L'ONGLET */}
-              <div className="p-4 bg-white flex items-center justify-between border-b border-slate-100">
+              <div className="p-4 bg-white flex flex-wrap items-center justify-between gap-3 border-b border-slate-100">
                 <p className="text-xs text-slate-500">
                   {activeTab === 'screens'
                     ? 'Glissez-déposez les fiches pour modifier leur ordre de lecture.'
                     : 'Glissez-déposez les questions pour changer l’enchaînement du quiz.'}
                 </p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    activeTab === 'screens' ? handleOpenScreenModal() : handleOpenQuestionModal()
-                  }
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition"
-                >
-                  <Plus size={14} />
-                  <span>{activeTab === 'screens' ? 'Ajouter une Fiche' : 'Ajouter une Question'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {activeTab === 'questions' && (
+                    <button
+                      type="button"
+                      onClick={() => setImportQuestionsModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition shadow-sm"
+                      title="Importer un ou plusieurs fichiers CSV ou JSON"
+                    >
+                      <Upload size={14} className="text-indigo-600" />
+                      <span>Importer des fichiers (CSV / JSON)</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      activeTab === 'screens' ? handleOpenScreenModal() : handleOpenQuestionModal()
+                    }
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-sm transition"
+                  >
+                    <Plus size={14} />
+                    <span>{activeTab === 'screens' ? 'Ajouter une Fiche' : 'Ajouter une Question'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* LISTE RÉORDONNABLE (DRAG AND DROP) */}
@@ -2106,6 +2124,25 @@ export const LessonEditor: React.FC = () => {
         title="Supprimer la question"
         message={`Êtes-vous sûr de vouloir supprimer cette question de quiz ?`}
       />
+
+      {/* MODAL IMPORT QUESTIONS (FICHIERS MULTIPLES) */}
+      {!isNew && (
+        <ImportQuestionsModal
+          isOpen={importQuestionsModalOpen}
+          onClose={() => setImportQuestionsModalOpen(false)}
+          lessonId={id!}
+          lessonTitle={lessonForm.title}
+          onSuccess={(imported) => {
+            // Recharger ou concaténer les questions
+            api.get(`/content/lessons/${id}`).then((res) => {
+              setQuestions(res.data.questions || []);
+              setActivePreviewIndex(0);
+            }).catch(() => {
+              setQuestions([...questions, ...imported]);
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

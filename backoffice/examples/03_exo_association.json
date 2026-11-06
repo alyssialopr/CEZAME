@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "lesson": {
+    "title": "Exemple 03 - Bonne Association",
+    "xp_reward": 50,
+    "screens": [
+      {
+        "title": "Les formalités clés de la location",
+        "body": "Quand tu loues un appartement, plusieurs documents et garanties protègent tes droits et ceux du bailleur. Bien connaître leur rôle t'évite les mauvaises surprises et accélère l'acceptation de ton dossier.",
+        "tip": "Bon réflexe : Ne verse jamais un centime avant la signature du bail et l'état des lieux d'entrée."
+      }
+    ],
+    "questions": [
+      {
+        "type": "matching",
+        "category": "Papiers du logement",
+        "prompt": "Associe chaque document ou dispositif à son utilité concrète :",
+        "options": [
+          {
+            "id": "1",
+            "left": "Garantie Visale",
+            "right": "Caution locative gratuite délivrée par Action Logement"
+          },
+          {
+            "id": "2",
+            "left": "Dépôt de garantie",
+            "right": "Caution rendue en fin de bail après état des lieux"
+          },
+          {
+            "id": "3",
+            "left": "Quittance de loyer",
+            "right": "Preuve de paiement mensuel servant de justificatif de domicile"
+          },
+          {
+            "id": "4",
+            "left": "DossierFacile",
+            "right": "Service public pour filigraner et protéger ses pièces"
+          }
+        ],
+        "explanation": "Ces 4 éléments sont les indispensables pour constituer un dossier locataire solide et sécuriser sa location."
+      }
+    ]
+  }
+}
