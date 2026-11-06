@@ -26,7 +26,8 @@ jobs:
       - run: npm test
 
   e2e:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 ne sait pas installer Chromium sur ubuntu-latest (26.04).
+    runs-on: ubuntu-24.04
     needs: unit
     steps:
       - uses: actions/checkout@v4
