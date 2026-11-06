@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Flame, Gem } from "lucide-react-native";
+import { Flame, Gem, Heart } from "lucide-react-native";
 import { useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,14 +9,17 @@ import { CATEGORIES } from "@/constants/categories";
 import { NavBar, NavKey } from "@/components/nav-bar";
 import { useProgress } from "@/hooks/useProgress";
 import { useRewards } from "@/hooks/useRewards";
+import { useHearts } from "@/providers/HeartsProvider";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useActiveCategory } from "@/providers/CategoryProvider";
 import { useTutorial } from "@/providers/TutorialProvider";
+import { tracker } from "@/services/trackerService";
 
 export default function CategoriesScreen() {
   const router = useRouter();
   const { data: progress } = useProgress();
   const { gems } = useRewards();
+  const { hearts } = useHearts();
   const { setActiveCategoryId } = useActiveCategory();
 
   const { pending, isActive, start, pressTarget } = useTutorial();
@@ -31,6 +34,7 @@ export default function CategoriesScreen() {
   const handleCategorySelect = async (id: string) => {
     // Choisir un thème fait avancer le tuto (étape "category-card") et va au home.
     pressTarget("category-card");
+    tracker.track('category_selected', { eventType: 'category', properties: { categoryId: id } });
     await setActiveCategoryId(id);
     router.replace('/(private)/(tabs)');
   };
@@ -62,6 +66,17 @@ export default function CategoriesScreen() {
           <View style={styles.stat}>
             <Gem size={18} color="#29B6F6" />
             <Text style={styles.blue}>{gems}</Text>
+          </View>
+
+          <View style={styles.stat}>
+            <Heart
+              size={18}
+              color={hearts === 0 ? "#AFAFB8" : "#FF4B6E"}
+              fill={hearts === 0 ? "#E5E5E5" : "#FF4B6E"}
+            />
+            <Text style={{ color: hearts === 0 ? "#AFAFB8" : "#FF4B6E", fontWeight: "700", fontSize: 14 }}>
+              {hearts}
+            </Text>
           </View>
         </View>
       </View>

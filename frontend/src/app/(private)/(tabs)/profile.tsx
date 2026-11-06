@@ -1,19 +1,24 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import {
+  Award,
   Car,
+  Coins,
   FileText,
   Flame,
   Footprints,
   Gem,
   Heart,
   Key,
+  Landmark,
   Lock,
   LogOut,
   Pencil,
   PiggyBank,
   RotateCcw,
   Shield,
+  ShieldCheck,
+  Sparkles,
   UserRound,
   Zap,
 } from "lucide-react-native";
@@ -25,14 +30,31 @@ import { useProgress } from "@/hooks/useProgress";
 import { useRewards } from "@/hooks/useRewards";
 import { useAuth } from "@/providers/AuthProvider";
 import { useTutorial } from "@/providers/TutorialProvider";
+import { UNIT_BADGES, UnitBadge } from "@/constants/categoryRewards";
 
-const PROFILE_BADGES = [
+const BADGE_ICON_MAP: Record<string, any> = {
+  Footprints,
+  PiggyBank,
+  Coins,
+  ShieldCheck,
+  Heart,
+  FileText,
+  Landmark,
+  Car,
+  Key,
+  Award,
+  Sparkles,
+};
+
+// Ensemble de tous les badges disponibles sur l'application Cézame
+const ALL_AVAILABLE_BADGES: { key: string; label: string; icon: any; color: string }[] = [
   { key: "premier-pas", label: "Premier Pas", icon: Footprints, color: "#9B6CFF" },
-  { key: "as-du-budget", label: "As du Budget", icon: PiggyBank, color: "#5FC97A" },
-  { key: "sante-de-fer", label: "Santé de Fer", icon: Heart, color: "#FF6B7A" },
-  { key: "pro-demarches", label: "Pro Démarches", icon: FileText, color: "#6366F1" },
-  { key: "cle-en-main", label: "Clé en Main", icon: Key, color: "#F97316" },
-  { key: "pilote-vigilant", label: "Pilote Vigilant", icon: Car, color: "#EC4899" },
+  ...Object.values(UNIT_BADGES).flat().map((b: UnitBadge) => ({
+    key: b.key,
+    label: b.label,
+    icon: BADGE_ICON_MAP[b.iconName] || Award,
+    color: b.color,
+  })),
 ];
 
 const RANK_INFO: Record<'bronze' | 'silver' | 'gold' | 'diamond' | 'rainbow', { label: string; color: string }> = {
@@ -53,7 +75,7 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     const doLogout = () => {
       supabase.auth.signOut();
-      router.replace("/(public)/login");
+      router.replace("/login");
     };
 
     if (Platform.OS === 'web') {
@@ -75,7 +97,7 @@ export default function ProfileScreen() {
 
   const handleReplayTutorial = () => {
     requestTutorial();
-    router.replace("/(private)/categories");
+    router.replace("/categories");
   };
 
   const username = (user?.user_metadata?.username as string | undefined) || "Explorateur";
@@ -148,27 +170,33 @@ export default function ProfileScreen() {
 
         <Text style={styles.sectionTitle}>Badges Réussis</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgesRow}>
-          {PROFILE_BADGES.map(({ key, label, icon: Icon, color }) => {
-            const isUnlocked = unlockedBadges.includes(key);
-            return (
-              <View key={key} style={styles.badgeItem}>
-                <View
-                  style={[
-                    styles.badgeCircle,
-                    { backgroundColor: isUnlocked ? color : "#ECEAF1" },
-                  ]}>
-                  {isUnlocked ? (
-                    <Icon size={24} color="#FFFFFF" />
-                  ) : (
-                    <Lock size={20} color="#AFAFB8" />
-                  )}
+          {[...ALL_AVAILABLE_BADGES]
+            .sort((a, b) => {
+              const aUnlocked = unlockedBadges.includes(a.key) ? 1 : 0;
+              const bUnlocked = unlockedBadges.includes(b.key) ? 1 : 0;
+              return bUnlocked - aUnlocked;
+            })
+            .map(({ key, label, icon: Icon, color }) => {
+              const isUnlocked = unlockedBadges.includes(key);
+              return (
+                <View key={key} style={styles.badgeItem}>
+                  <View
+                    style={[
+                      styles.badgeCircle,
+                      { backgroundColor: isUnlocked ? color : "#ECEAF1" },
+                    ]}>
+                    {isUnlocked ? (
+                      <Icon size={24} color="#FFFFFF" />
+                    ) : (
+                      <Lock size={20} color="#AFAFB8" />
+                    )}
+                  </View>
+                  <Text style={[styles.badgeLabel, !isUnlocked && styles.badgeLabelLocked]}>
+                    {label}
+                  </Text>
                 </View>
-                <Text style={[styles.badgeLabel, !isUnlocked && styles.badgeLabelLocked]}>
-                  {label}
-                </Text>
-              </View>
-            );
-          })}
+              );
+            })}
         </ScrollView>
 
         <View style={styles.speechWrapper}>
