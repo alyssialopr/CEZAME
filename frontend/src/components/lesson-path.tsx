@@ -12,7 +12,7 @@ import { useRewards } from "@/hooks/useRewards";
 import { RewardModal } from "@/components/reward-modal";
 import { UnitRewardChest } from "@/components/unit-reward-chest";
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
 
 const OFFSETS = [-38, 0, 38, 0];
 const getNodeOffset = (idx: number) => OFFSETS[idx % OFFSETS.length];
@@ -23,7 +23,7 @@ interface AnimatedLessonButtonProps {
   mainColor: string;
   accentColor: string;
   isFirstActive: boolean;
-  nodeRef?: RefObject<View | null>;
+  nodeRef?: RefObject<ViewInstance | null>;
   onPress: () => void;
 }
 
@@ -379,7 +379,7 @@ export function LessonPath({
   nodeRef,
 }: {
   category: Category;
-  nodeRef?: RefObject<View | null>;
+  nodeRef?: RefObject<ViewInstance | null>;
 }) {
   const router = useRouter();
   const { pressTarget } = useTutorial();

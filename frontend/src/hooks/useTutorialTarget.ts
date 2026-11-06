@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { InteractionManager, View } from 'react-native';
+import type { ViewInstance } from 'react-native';
 
 import { TutorialStepId } from '@/constants/tutorial';
 import { useTutorial } from '@/providers/TutorialProvider';
@@ -14,7 +14,7 @@ import { useTutorial } from '@/providers/TutorialProvider';
  * La mesure est répétée jusqu'à stabilisation pour éviter un cadrage capturé
  * pendant une transition d'écran.
  */
-export function useTutorialTarget(id: TutorialStepId, ref: React.RefObject<View | null>) {
+export function useTutorialTarget(id: TutorialStepId, ref: React.RefObject<ViewInstance | null>) {
   const { isActive, currentStep, setTargetRect } = useTutorial();
   const isCurrent = isActive && currentStep?.id === id;
 
@@ -40,7 +40,7 @@ export function useTutorialTarget(id: TutorialStepId, ref: React.RefObject<View 
           return;
         }
 
-        node.measureInWindow((x, y, width, height) => {
+        node.measureInWindow((x: number, y: number, width: number, height: number) => {
           if (cancelled) return;
           if (width === 0 || height === 0) {
             scheduleRetry(attempt);
@@ -67,13 +67,11 @@ export function useTutorialTarget(id: TutorialStepId, ref: React.RefObject<View 
         });
       };
 
-      const task = InteractionManager.runAfterInteractions(() => {
-        requestAnimationFrame(() => measure(0));
-      });
+      const animFrame = requestAnimationFrame(() => measure(0));
 
       return () => {
         cancelled = true;
-        task.cancel?.();
+        cancelAnimationFrame(animFrame);
         timers.forEach(clearTimeout);
       };
     }, [isCurrent, ref, setTargetRect]),

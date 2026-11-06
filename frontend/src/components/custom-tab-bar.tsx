@@ -1,6 +1,6 @@
 import { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useRef } from 'react';
-import { View } from 'react-native';
+import type { ViewInstance } from 'react-native';
 
 import { NavBar, NavKey } from '@/components/nav-bar';
 import { useTutorialTarget } from '@/hooks/useTutorialTarget';
@@ -10,8 +10,8 @@ import { useTutorial } from '@/providers/TutorialProvider';
  * Tab bar du navigateur (prop `tabBar` de <Tabs>, expo-router).
  * S'appuie sur NavBar et relaie la navigation React Navigation.
  */
-export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
-  const barRef = useRef<View>(null);
+export function CustomTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
+  const barRef = useRef<ViewInstance>(null);
   const { pressTarget } = useTutorial();
   useTutorialTarget('tab-bar', barRef);
 
@@ -22,13 +22,13 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     if (pressTarget('tab-bar')) return;
     const route = state.routes.find((r) => r.name === key);
     if (!route) return;
-    const event = navigation.emit({
+    const event = emitter.emit({
       type: 'tabPress',
       target: route.key,
       canPreventDefault: true,
     });
     if (activeKey !== key && !event.defaultPrevented) {
-      navigation.navigate(key);
+      navigateToTab(route.key);
     }
   };
 

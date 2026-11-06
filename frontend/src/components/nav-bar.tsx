@@ -1,6 +1,6 @@
 import { Home, Settings, User } from 'lucide-react-native';
 import { forwardRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ACTIVE_COLOR = '#7C4DFF';
@@ -23,7 +23,7 @@ type NavBarProps = {
  * Barre de navigation plate présentationnelle. Utilisée à la fois par la tab bar
  * du navigateur (custom-tab-bar.tsx) et en autonome sur l'écran de sélection.
  */
-export const NavBar = forwardRef<View, NavBarProps>(({ activeKey, onPress }, ref) => {
+export const NavBar = forwardRef<ViewInstance, NavBarProps>(({ activeKey, onPress }, ref) => {
   const insets = useSafeAreaInsets();
 
   return (
