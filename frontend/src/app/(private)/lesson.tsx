@@ -67,7 +67,21 @@ export default function LessonScreen() {
         categoryId,
       });
     }
-  }, [effectiveLessonId]);
+  }, [effectiveLessonId, categoryId]);
+
+  // Réinitialiser les états dès qu'on change de question
+  useEffect(() => {
+    setSelectedLetter(null);
+    setSelectedDocumentFieldId(null);
+    setBucketAssignments({});
+    setIsBucketSubmitted(false);
+    setIsBucketCorrect(false);
+    setScamUserChoice(null);
+    setSelectedScenarioOptionId(null);
+    setIsOrderSubmitted(false);
+    setIsOrderCorrect(false);
+    setIsMatchingComplete(false);
+  }, [questionIndex]);
 
   if (!lesson || !category) {
     return <Redirect href="/categories" />;
@@ -179,19 +193,6 @@ export default function LessonScreen() {
     };
   }
 
-  // Réinitialiser les états dès qu'on change de question
-  useEffect(() => {
-    setSelectedLetter(null);
-    setSelectedDocumentFieldId(null);
-    setBucketAssignments({});
-    setIsBucketSubmitted(false);
-    setIsBucketCorrect(false);
-    setScamUserChoice(null);
-    setSelectedScenarioOptionId(null);
-    setIsOrderSubmitted(false);
-    setIsOrderCorrect(false);
-    setIsMatchingComplete(false);
-  }, [questionIndex]);
 
   const bucketItems = Array.isArray(bucketData?.items) ? bucketData.items : [];
   const areAllBucketItemsAssigned =
