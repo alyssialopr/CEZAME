@@ -136,9 +136,15 @@ export async function fetchCategoryUnits(
         .from('lessons')
         .select('*')
         .eq('category_id', categoryId)
+        .neq('status', 'draft')
         .order('order_index', { ascending: true });
 
       if (!lessonsError && lessonsData && lessonsData.length > 0) {
+        // Filtrer strictement les leçons en draft ou archivées (seules les leçons publiées sont affichées dans l'app)
+        const publishedLessons = lessonsData.filter(
+          (l) => l.status !== 'draft' && l.status !== 'archived'
+        );
+
         const scoreMap: Record<string, number> = {};
 
         // Récupérer la progression Supabase si l'utilisateur est connecté
@@ -165,48 +171,50 @@ export async function fetchCategoryUnits(
 
         // Assembler les unités avec le statut séquentiel calculé
         let previousLessonCompleted = true; // La toute 1ère leçon est débloquée
-        const formattedUnits: DBUnit[] = unitsData.map((unit) => {
-          const unitLessons = lessonsData
-            .filter((l) => l.unit_id === unit.id)
-            .map((lesson) => {
-              const explicitStatus = progressMap[lesson.id];
-              let status: LessonProgressStatus = 'locked';
+        const formattedUnits: DBUnit[] = unitsData
+          .map((unit) => {
+            const unitLessons = publishedLessons
+              .filter((l) => l.unit_id === unit.id)
+              .map((lesson) => {
+                const explicitStatus = progressMap[lesson.id];
+                let status: LessonProgressStatus = 'locked';
 
-              // Une leçon ne peut être 'completed' que si les leçons précédentes le sont également
-              if (explicitStatus === 'completed' && previousLessonCompleted) {
-                status = 'completed';
-                previousLessonCompleted = true;
-              } else if (previousLessonCompleted) {
-                status = 'unlocked';
-                previousLessonCompleted = false;
-              } else {
-                status = 'locked';
-                previousLessonCompleted = false;
-              }
+                // Une leçon ne peut être 'completed' que si les leçons précédentes le sont également
+                if (explicitStatus === 'completed' && previousLessonCompleted) {
+                  status = 'completed';
+                  previousLessonCompleted = true;
+                } else if (previousLessonCompleted) {
+                  status = 'unlocked';
+                  previousLessonCompleted = false;
+                } else {
+                  status = 'locked';
+                  previousLessonCompleted = false;
+                }
 
-              return {
-                id: lesson.id,
-                unit_id: lesson.unit_id,
-                category_id: lesson.category_id,
-                order_index: lesson.order_index,
-                title: lesson.title,
-                xp_reward: lesson.xp_reward,
-                status,
-                score: scoreMap[lesson.id] ?? (status === 'completed' ? 100 : undefined),
-              };
-            });
+                return {
+                  id: lesson.id,
+                  unit_id: lesson.unit_id,
+                  category_id: lesson.category_id,
+                  order_index: lesson.order_index,
+                  title: lesson.title,
+                  xp_reward: lesson.xp_reward,
+                  status,
+                  score: scoreMap[lesson.id] ?? (status === 'completed' ? 100 : undefined),
+                };
+              });
 
-          return {
-            id: unit.id,
-            category_id: unit.category_id,
-            unit_number: unit.unit_number,
-            title: unit.title,
-            subtitle: unit.subtitle,
-            mascot_name: (unit as any).mascot_name || null,
-            order_index: unit.order_index,
-            lessons: unitLessons,
-          };
-        });
+            return {
+              id: unit.id,
+              category_id: unit.category_id,
+              unit_number: unit.unit_number,
+              title: unit.title,
+              subtitle: unit.subtitle,
+              mascot_name: (unit as any).mascot_name || null,
+              order_index: unit.order_index,
+              lessons: unitLessons,
+            };
+          })
+          .filter((unit) => unit.lessons.length > 0);
 
         // Mettre en cache les unités
         await AsyncStorage.setItem(CACHE_KEY_UNITS(categoryId), JSON.stringify(formattedUnits));
@@ -222,7 +230,17 @@ export async function fetchCategoryUnits(
     const cached = await AsyncStorage.getItem(CACHE_KEY_UNITS(categoryId));
     if (cached) {
       const units: DBUnit[] = JSON.parse(cached);
-      return units;
+      const cleanUnits = units
+        .map((u) => ({
+          ...u,
+          lessons: u.lessons.filter(
+            (l) => (l as any).status !== 'draft' && (l as any).status !== 'archived'
+          ),
+        }))
+        .filter((u) => u.lessons.length > 0);
+      if (cleanUnits.length > 0) {
+        return cleanUnits;
+      }
     }
   } catch {
     // ignorer
@@ -297,9 +315,14 @@ export async function fetchLessonDetails(
       .from('lessons')
       .select('*')
       .eq('id', lessonId)
-      .single();
+      .neq('status', 'draft')
+      .neq('status', 'archived')
+      .maybeSingle();
 
     if (!lessonError && lessonData) {
+      if (lessonData.status === 'draft' || lessonData.status === 'archived') {
+        return null;
+      }
       const catId = lessonData.category_id;
 
       const [screensRes, questionsRes] = await Promise.all([
