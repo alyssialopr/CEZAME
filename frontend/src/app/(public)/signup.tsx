@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
-import { Mail, Lock, UserPlus, User as UserIcon } from 'lucide-react-native';
+import { Mail, Lock, UserPlus, User as UserIcon, FlaskConical } from 'lucide-react-native';
 
 import { supabase } from '@/lib/supabase';
 import { Image } from 'expo-image';
@@ -48,6 +48,15 @@ export default function SignupScreen() {
           <Text style={styles.title}>Rejoins-nous !</Text>
           <Text style={styles.subtitle}>Crée ton compte CEZAME</Text>
         </View>
+
+        <Link href="/(public)/login" asChild>
+          <TouchableOpacity style={styles.testerBanner}>
+            <FlaskConical size={16} color="#1D8271" />
+            <Text style={styles.testerBannerText}>
+              Testeur ? <Text style={{ textDecorationLine: 'underline', fontWeight: '800' }}>Rejoins avec ton prénom ici</Text>
+            </Text>
+          </TouchableOpacity>
+        </Link>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
@@ -121,6 +130,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: 'center',
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     alignItems: 'center',
@@ -140,6 +152,24 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#60646C',
+  },
+  testerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#EAF8EE',
+    borderWidth: 1.5,
+    borderColor: '#91C85A',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  testerBannerText: {
+    fontSize: 13,
+    color: '#1D8271',
+    fontWeight: '600',
   },
   form: {
     gap: 16,
