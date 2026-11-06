@@ -1,0 +1,9 @@
+{
+  "name": "cezame",
+  "private": true,
+  "scripts": {
+    "test:unit": "npm --prefix backoffice/server test && npm --prefix backoffice/client test && npm --prefix frontend test",
+    "test:e2e": "npm --prefix e2e test",
+    "test": "npm run test:unit && npm run test:e2e"
+  }
+}

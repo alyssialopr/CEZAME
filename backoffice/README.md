@@ -85,3 +85,10 @@ npm run dev
 - Le client React démarre sur : **http://localhost:5173**
 
 Ouvrez simplement **http://localhost:5173** dans votre navigateur !
+
+### 5. Lancer les tests
+```bash
+cd server && npm test   # API : Vitest + Supertest, Supabase simulé
+cd ../client && npm test  # interface : Vitest + Testing Library
+```
+Les parcours end-to-end sont dans `e2e/` à la racine du dépôt (voir `TESTING.md`).

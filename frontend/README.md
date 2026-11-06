@@ -25,6 +25,14 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Tests
+
+```bash
+npm test   # jest-expo + React Native Testing Library, Supabase et AsyncStorage simulés
+```
+
+Les parcours end-to-end (app exportée pour le web, puis Playwright) sont dans `e2e/` à la racine du dépôt (voir `TESTING.md`).
+
 ## Get a fresh project
 
 When you're ready, run:
