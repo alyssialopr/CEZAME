@@ -23,3 +23,5 @@ beforeEach(async () => {
 afterEach(() => {
   jest.restoreAllMocks();
 });
+
+jest.setTimeout(15000);

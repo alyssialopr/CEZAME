@@ -72,13 +72,15 @@ router.post('/lessons', async (req: AuthenticatedRequest, res) => {
 
     const { title, xpReward, screens, questions } = readLessonFields(lessonData);
 
-    // Déterminer l'order_index suivant pour cette unité
-    const { count } = await supabaseAdmin
+    // Déterminer l'order_index suivant pour cette catégorie (contrainte UNIQUE(category_id, order_index))
+    const { data: maxLesson } = await supabaseAdmin
       .from('lessons')
-      .select('*', { count: 'exact', head: true })
-      .eq('unit_id', targetUnitId);
+      .select('order_index')
+      .eq('category_id', targetCategoryId)
+      .order('order_index', { ascending: false })
+      .limit(1);
 
-    const nextOrder = (count || 0) + 1;
+    const nextOrder = (maxLesson?.[0]?.order_index || 0) + 1;
 
     // 1. Créer la leçon
     const { data: newLesson, error: lError } = await supabaseAdmin
@@ -140,11 +142,11 @@ router.post('/lessons/batch', async (req: AuthenticatedRequest, res) => {
       return;
     }
 
-    // Récupérer le plus grand order_index existant pour cette unité
+    // Récupérer le plus grand order_index existant pour cette catégorie (UNIQUE (category_id, order_index))
     const { data: existingLessons } = await supabaseAdmin
       .from('lessons')
       .select('order_index')
-      .eq('unit_id', targetUnitId)
+      .eq('category_id', targetCategoryId)
       .order('order_index', { ascending: false })
       .limit(1);
 
@@ -160,22 +162,46 @@ router.post('/lessons/batch', async (req: AuthenticatedRequest, res) => {
         questions = [],
       } = lData;
 
-      // 1. Créer la leçon
-      const { data: newLesson, error: lError } = await supabaseAdmin
-        .from('lessons')
-        .insert({
-          unit_id: targetUnitId,
-          category_id: targetCategoryId,
-          title,
-          xp_reward: Number(xp_reward) || 50,
-          order_index: nextOrder++,
-          status: status === 'published' ? 'published' : 'draft',
-        })
-        .select()
-        .single();
+      let newLesson: any = null;
+      let attempts = 0;
 
-      if (lError) {
-        console.error('Erreur insertion leçon batch:', lError);
+      // Boucle de sécurité : incrémente nextOrder en cas de conflit d'index
+      while (!newLesson && attempts < 10) {
+        attempts++;
+        const currentOrder = nextOrder++;
+        const { data, error: lError } = await supabaseAdmin
+          .from('lessons')
+          .insert({
+            unit_id: targetUnitId,
+            category_id: targetCategoryId,
+            title,
+            xp_reward: Number(xp_reward) || 50,
+            order_index: currentOrder,
+            status: status === 'published' ? 'published' : 'draft',
+          })
+          .select()
+          .single();
+
+        if (lError) {
+          if (lError.code === '23505') {
+            // Collision d'index : récupérer le dernier max et continuer
+            const { data: latest } = await supabaseAdmin
+              .from('lessons')
+              .select('order_index')
+              .eq('category_id', targetCategoryId)
+              .order('order_index', { ascending: false })
+              .limit(1);
+            nextOrder = (latest?.[0]?.order_index || currentOrder) + 1;
+            continue;
+          }
+          console.error('Erreur insertion leçon batch:', lError);
+          break;
+        }
+
+        newLesson = data;
+      }
+
+      if (!newLesson) {
         continue;
       }
 

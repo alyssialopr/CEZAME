@@ -56,3 +56,6 @@ app.get('/api/health', (_req, res) => {
     serviceRoleConfigured: hasServiceRoleKey,
   });
 });
+
+export default app;
+
