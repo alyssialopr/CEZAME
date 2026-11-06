@@ -5,6 +5,18 @@ import { tracker } from '@/services/trackerService';
 const LAST_TESTER_NAME_KEY = '@cezame_last_tester_name';
 
 /**
+ * Partie locale de l'email de test : minuscules, sans accents, 20 caractères au plus.
+ */
+export function sanitizeTesterName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '_')
+    .slice(0, 20);
+}
+
+/**
  * Service de gestion des connexions testeurs (Phase de test / MVP).
  * Permet à un utilisateur de rentrer uniquement son nom ou prénom pour tester l'application directement.
  */
@@ -20,12 +32,7 @@ export async function signInAsTester(name: string): Promise<{ success: boolean; 
   } catch {}
 
   // Formatage de l'identifiant email de test
-  const sanitized = cleanName
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]/g, '_')
-    .slice(0, 20);
+  const sanitized = sanitizeTesterName(cleanName);
 
   const testId = Math.random().toString(36).substring(2, 7);
   const testEmail = `test_${sanitized || 'user'}_${testId}@cezame-test.app`;

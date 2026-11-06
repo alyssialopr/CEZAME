@@ -42,3 +42,6 @@ example
 # generated native folders
 /ios
 /android
+
+# E2E web build
+dist-e2e/

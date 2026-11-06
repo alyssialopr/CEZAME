@@ -177,6 +177,7 @@ function AnimatedLessonButton({
         <MasteryStars count={starCount} />
 
         <TouchableOpacity
+          testID={`lesson-completed-${lesson.id}`}
           style={styles.completedStep}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
@@ -220,6 +221,7 @@ function AnimatedLessonButton({
                 borderBottomColor: accentColor,
               },
             ]}
+            testID={`lesson-start-${lesson.id}`}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
             onPress={onPress}
@@ -234,6 +236,7 @@ function AnimatedLessonButton({
   return (
     <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
       <TouchableOpacity
+        testID={`lesson-locked-${lesson.id}`}
         style={styles.lockedStep}
         onPress={handleLockedPress}
         activeOpacity={0.85}>

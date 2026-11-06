@@ -19,7 +19,7 @@ const CACHE_KEY_PROGRESS = (userId: string, cat: string) => `@cezame_progress_${
  * Construit un ensemble d'unités et de leçons par défaut à partir des constantes locales.
  * Sert de filet de sécurité si la BDD est hors-ligne ou pas encore peuplée.
  */
-function getLocalFallbackUnits(
+export function getLocalFallbackUnits(
   categoryId: string,
   progressMap: Record<string, LessonProgressStatus> = {}
 ): DBUnit[] {
@@ -234,7 +234,7 @@ export async function fetchCategoryUnits(
 /**
  * Détermine le type précis d'un exercice de façon ultra-robuste.
  */
-function resolveQuestionType(rawExplicitType: any, rawOptions: any): QuestionType {
+export function resolveQuestionType(rawExplicitType: any, rawOptions: any): QuestionType {
   const explicit = rawExplicitType as QuestionType | undefined;
   if (explicit === 'document') return 'document';
   if (explicit === 'matching') return 'matching';

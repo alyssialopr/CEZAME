@@ -17,7 +17,13 @@ import { DocumentExercise } from "@/components/exercises/DocumentExercise";
 import { BucketExercise } from "@/components/exercises/BucketExercise";
 import { ScamExercise } from "@/components/exercises/ScamExercise";
 import { ScenarioExercise } from "@/components/exercises/ScenarioExercise";
-import { DocumentField, BucketData, BucketItem, ScamData, ScenarioData, ScenarioOption } from "@/types/lesson";
+import { DocumentField, BucketData, ScamData, ScenarioData, ScenarioOption } from "@/types/lesson";
+import {
+  FALLBACK_BUCKET_DATA,
+  isBucketAnswerCorrect,
+  isScamAnswerCorrect,
+  normalizeBucketData,
+} from "@/lib/exerciseAnswers";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useTutorial } from "@/providers/TutorialProvider";
 import { tracker } from "@/services/trackerService";
@@ -152,47 +158,12 @@ export default function LessonScreen() {
   const scenarioData: ScenarioData = (Array.isArray(rawOptions) && isScenarioPayload ? rawOptions[0] : rawOptions) as ScenarioData;
   const scamData: ScamData = (Array.isArray(rawOptions) && isScamPayload ? rawOptions[0] : rawOptions) as ScamData;
 
-  let bucketData: BucketData;
-  if (Array.isArray(rawOptions)) {
-    if (rawOptions[0]?.buckets || rawOptions[0]?.items) {
-      bucketData = rawOptions[0] as BucketData;
-    } else if (rawOptions.some((it: any) => it?.bucketId !== undefined)) {
-      const uniqueIds = Array.from(new Set(rawOptions.map((it: any) => it.bucketId)));
-      const defaultColors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B'];
-      bucketData = {
-        buckets: uniqueIds.map((bId, idx) => ({
-          id: String(bId),
-          label: `Bac ${idx + 1}`,
-          color: defaultColors[idx % defaultColors.length],
-        })),
-        items: rawOptions as BucketItem[],
-      };
-    } else {
-      bucketData = { buckets: [], items: [] };
-    }
-  } else if (rawOptions && typeof rawOptions === 'object') {
-    bucketData = rawOptions as BucketData;
-  } else {
-    bucketData = { buckets: [], items: [] };
-  }
+  let bucketData: BucketData = normalizeBucketData(rawOptions);
 
   // Filet de sécurité si bucketData est vide mais qu'on est sur un exercice bucket
   if (exerciseType === 'bucket' && (!bucketData.items || bucketData.items.length === 0)) {
-    bucketData = {
-      buckets: [
-        { id: 'b1', label: 'Besoins (50%)', color: '#3B82F6' },
-        { id: 'b2', label: 'Envies (30%)', color: '#8B5CF6' },
-        { id: 'b3', label: 'Épargne (20%)', color: '#10B981' },
-      ],
-      items: [
-        { id: '1', text: 'Loyer et électricité', bucketId: 'b1' },
-        { id: '2', text: 'Sorties resto & cinéma', bucketId: 'b2' },
-        { id: '3', text: 'Virement sur Livret A', bucketId: 'b3' },
-        { id: '4', text: 'Courses alimentaires', bucketId: 'b1' },
-      ],
-    };
+    bucketData = FALLBACK_BUCKET_DATA;
   }
-
 
   const bucketItems = Array.isArray(bucketData?.items) ? bucketData.items : [];
   const areAllBucketItemsAssigned =
@@ -256,8 +227,7 @@ export default function LessonScreen() {
 
   function handleVerifyBucket() {
     pressTarget("lesson-question");
-    const items = bucketItems;
-    const allCorrect = items.length > 0 && items.every((it) => bucketAssignments[it.id] === it.bucketId);
+    const allCorrect = isBucketAnswerCorrect(bucketItems, bucketAssignments);
     setIsBucketCorrect(allCorrect);
     setIsBucketSubmitted(true);
     if (allCorrect) {
@@ -271,8 +241,7 @@ export default function LessonScreen() {
     if (scamUserChoice !== null) return;
     pressTarget("lesson-question");
     setScamUserChoice(choseScam);
-    const isActualScam = Boolean(scamData?.isScam !== undefined ? scamData.isScam : (scamData as any)?.scam);
-    if (choseScam === isActualScam) {
+    if (isScamAnswerCorrect(scamData, choseScam)) {
       setCorrectCount((c) => c + 1);
     } else {
       setHearts((h) => Math.max(0, h - 1));
@@ -345,7 +314,7 @@ export default function LessonScreen() {
 
         <View style={styles.hearts}>
           <Heart color="#FF4B6E" size={20} />
-          <Text style={styles.heartsText}>{hearts}</Text>
+          <Text testID="lesson-hearts" style={styles.heartsText}>{hearts}</Text>
         </View>
       </View>
 
@@ -437,6 +406,7 @@ export default function LessonScreen() {
                     isCorrectOption && styles.optionCorrect,
                     isWrongSelected && styles.optionWrong,
                   ]}
+                  testID={`qcm-option-${optionLetter}`}
                   disabled={isRevealed}
                   onPress={() => handleSelect({ ...option, letter: optionLetter })}>
                   <View
@@ -474,6 +444,7 @@ export default function LessonScreen() {
             styles.continueButton,
             { marginBottom: insets.bottom + 12 },
           ]}
+          testID="lesson-verify"
           onPress={handleVerifyOrder}>
           <Text style={styles.continueText}>VÉRIFIER</Text>
         </TouchableOpacity>
@@ -485,6 +456,7 @@ export default function LessonScreen() {
             !areAllBucketItemsAssigned && styles.continueButtonDisabled,
           ]}
           disabled={!areAllBucketItemsAssigned}
+          testID="lesson-verify"
           onPress={handleVerifyBucket}>
           <Text style={styles.continueText}>VÉRIFIER</Text>
         </TouchableOpacity>
@@ -495,6 +467,7 @@ export default function LessonScreen() {
             { marginBottom: insets.bottom + 12 },
             !isQuestionAnswered && styles.continueButtonDisabled,
           ]}
+          testID="lesson-continue"
           disabled={!isQuestionAnswered}
           onPress={handleContinue}>
           <Text style={styles.continueText}>CONTINUER</Text>

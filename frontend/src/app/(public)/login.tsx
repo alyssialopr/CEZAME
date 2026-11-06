@@ -100,6 +100,7 @@ export default function LoginScreen() {
                 <User color="#1D8271" size={20} />
                 <TextInput
                   style={styles.input}
+                  testID="tester-name-input"
                   placeholder="Ex : Camille, Lucas, Sarah..."
                   placeholderTextColor="#8E929A"
                   value={testerName}
@@ -111,6 +112,7 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 style={[styles.testerButton, testerLoading && styles.buttonDisabled]}
+                testID="tester-login-button"
                 onPress={handleTesterLogin}
                 disabled={testerLoading || loading}
               >
@@ -134,6 +136,7 @@ export default function LoginScreen() {
                 <Mail color="#60646C" size={20} />
                 <TextInput
                   style={styles.input}
+                  testID="email-input"
                   placeholder="Email"
                   placeholderTextColor="#60646C"
                   value={email}
@@ -147,6 +150,7 @@ export default function LoginScreen() {
                 <Lock color="#60646C" size={20} />
                 <TextInput
                   style={styles.input}
+                  testID="password-input"
                   placeholder="Mot de passe"
                   placeholderTextColor="#60646C"
                   value={password}
@@ -157,6 +161,7 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 style={[styles.button, loading && styles.buttonDisabled]}
+                testID="email-login-button"
                 onPress={signInWithEmail}
                 disabled={loading || testerLoading}
               >

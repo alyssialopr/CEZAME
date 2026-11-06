@@ -104,6 +104,7 @@ export default function LessonContentScreen() {
 
       <TouchableOpacity
         ref={continueRef}
+        testID="lesson-content-continue"
         style={[styles.continueButton, { marginBottom: insets.bottom + 12 }]}
         onPress={handleContinue}>
         <Text style={styles.continueText}>CONTINUER</Text>

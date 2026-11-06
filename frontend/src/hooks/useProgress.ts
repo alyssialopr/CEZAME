@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { nextStreak } from '@/lib/streak';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { Database } from '@/lib/database.types';
@@ -56,26 +57,7 @@ export function useUpdateStreak() {
     mutationFn: async (currentProgress: Progress) => {
       if (!userId) throw new Error('User not authenticated');
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      const lastUpdate = new Date(currentProgress.updated_at);
-      lastUpdate.setHours(0, 0, 0, 0);
-
-      let newStreak = currentProgress.streak;
-
-      if (currentProgress.streak === 0) {
-        newStreak = 1;
-      } else if (lastUpdate.getTime() === yesterday.getTime()) {
-        newStreak += 1;
-      } else if (lastUpdate.getTime() < yesterday.getTime()) {
-        // If they missed a day
-        newStreak = 1;
-      }
-      // If lastUpdate is today and streak > 0, streak remains the same
+      const newStreak = nextStreak(currentProgress.streak, currentProgress.updated_at);
 
       const newXp = currentProgress.xp + 50; // Add 50 XP per lesson
 

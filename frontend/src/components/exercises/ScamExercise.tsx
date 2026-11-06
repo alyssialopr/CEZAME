@@ -84,6 +84,7 @@ export function ScamExercise({
         <TouchableOpacity
           activeOpacity={0.8}
           disabled={isRevealed || disabled}
+          testID="scam-choice-scam"
           onPress={() => onChoose(true)}
           style={[
             styles.choiceButton,
@@ -107,6 +108,7 @@ export function ScamExercise({
         <TouchableOpacity
           activeOpacity={0.8}
           disabled={isRevealed || disabled}
+          testID="scam-choice-legit"
           onPress={() => onChoose(false)}
           style={[
             styles.choiceButton,

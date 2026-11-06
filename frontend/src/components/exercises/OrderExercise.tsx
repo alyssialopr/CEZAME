@@ -145,6 +145,7 @@ export function OrderExercise({
               {!isRevealed ? (
                 <View style={styles.controls}>
                   <TouchableOpacity
+                    testID={`order-up-${index}`}
                     onPress={() => moveUp(index)}
                     disabled={index === 0 || disabled}
                     style={[styles.arrowButton, index === 0 && styles.arrowDisabled]}>
@@ -152,6 +153,7 @@ export function OrderExercise({
                   </TouchableOpacity>
 
                   <TouchableOpacity
+                    testID={`order-down-${index}`}
                     onPress={() => moveDown(index)}
                     disabled={index === currentOrder.length - 1 || disabled}
                     style={[

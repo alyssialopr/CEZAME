@@ -108,6 +108,7 @@ export function MatchingExercise({
             return (
               <TouchableOpacity
                 key={`left-${pair.id}`}
+                testID={`matching-left-${pair.id}`}
                 onPress={() => handleLeftPress(pair.id)}
                 disabled={isMatched || disabled || isRevealed}
                 activeOpacity={0.7}
@@ -141,6 +142,7 @@ export function MatchingExercise({
             return (
               <TouchableOpacity
                 key={`right-${item.id}`}
+                testID={`matching-right-${item.id}`}
                 onPress={() => handleRightPress(item.id)}
                 disabled={isMatched || disabled || isRevealed}
                 activeOpacity={0.7}

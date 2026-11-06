@@ -138,6 +138,7 @@ export function BucketExercise({
                       key={bucket.id}
                       activeOpacity={0.7}
                       disabled={isRevealed || disabled}
+                      testID={`bucket-${item.id}-${bucket.id}`}
                       onPress={() => onAssign(item.id, bucket.id)}
                       style={[
                         styles.bucketBtn,

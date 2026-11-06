@@ -68,6 +68,7 @@ export function DocumentExercise({
                 key={field.id || `field-${index}`}
                 activeOpacity={0.8}
                 disabled={isRevealed || disabled}
+                testID={`document-field-${field.id || index}`}
                 onPress={() => onSelectField(field)}
                 style={[
                   styles.fieldRow,

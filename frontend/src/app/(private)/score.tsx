@@ -45,7 +45,7 @@ export default function ScoreScreen() {
             contentFit="contain"
           />
 
-          <Text style={styles.title}>FÉLICITATIONS !</Text>
+          <Text testID="score-title" style={styles.title}>FÉLICITATIONS !</Text>
 
           <View style={styles.streakCard}>
             <View style={styles.flamesRow}>
@@ -68,7 +68,7 @@ export default function ScoreScreen() {
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
+          <TouchableOpacity testID="score-continue" style={styles.finishButton} onPress={handleFinish}>
             <Text style={styles.finishText}>CONTINUER</Text>
           </TouchableOpacity>
         </View>

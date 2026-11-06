@@ -141,6 +141,7 @@ export function ScenarioExercise({
                 showSuccess && styles.optionCardCorrect,
                 showFailure && styles.optionCardWrong,
               ]}
+              testID={`scenario-option-${option.id || idx}`}
               onPress={() => onSelectOption(option)}
             >
               <View style={styles.optionMainRow}>
