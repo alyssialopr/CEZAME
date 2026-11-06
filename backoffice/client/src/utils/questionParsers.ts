@@ -1,4 +1,5 @@
 import { LessonQuestion, QuizOption } from '../types/index.js';
+import { hasEnoughOptions, normalizeQuestionOptions } from './questionOptions.js';
 
 export interface ParsedFileResult {
   fileName: string;
@@ -182,47 +183,20 @@ export function parseJSONQuestions(content: string, fileName: string): ParsedFil
         return;
       }
 
-      let options: QuizOption[] = [];
+      const type = item.type || 'qcm';
+      const options = normalizeQuestionOptions(type, item.options, item);
 
-      // Format 1 : options = [ { letter, text, correct }, ... ]
-      if (Array.isArray(item.options)) {
-        options = item.options.map((opt: any, oIdx: number) => {
-          if (typeof opt === 'string') {
-            const letter = String.fromCharCode(65 + oIdx);
-            const isCorrect =
-              item.correct === letter ||
-              item.correct === opt ||
-              item.correctIndex === oIdx ||
-              oIdx === 0;
-            return { letter, text: opt, correct: isCorrect };
-          }
-          return {
-            letter: opt.letter || String.fromCharCode(65 + oIdx),
-            text: opt.text || '',
-            correct: Boolean(opt.correct),
-          };
-        });
-      } else if (typeof item.options === 'object' && item.options !== null) {
-        // Format 2 : options = { "A": "...", "B": "..." }
-        options = Object.entries(item.options).map(([letter, text]: [string, any]) => ({
-          letter: letter.toUpperCase(),
-          text: String(text),
-          correct: item.correct === letter || item.correct === text,
-        }));
-      }
-
-      // Au moins une option correcte
-      if (options.length > 0 && !options.some((o) => o.correct)) {
-        options[0].correct = true;
-      }
-
-      if (options.length < 2) {
-        errors.push(`Élément #${idx + 1} ("${prompt.substring(0, 30)}...") : au moins 2 options requises.`);
+      if (!hasEnoughOptions(type, options)) {
+        errors.push(
+          type === 'qcm'
+            ? `Élément #${idx + 1} ("${prompt.substring(0, 30)}...") : au moins 2 options requises.`
+            : `Élément #${idx + 1} ("${prompt.substring(0, 30)}...") : options manquantes pour le type ${type}.`
+        );
         return;
       }
 
       questions.push({
-        type: item.type || 'qcm',
+        type,
         category: item.category || item.categorie || 'Quiz',
         prompt,
         options,

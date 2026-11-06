@@ -11,7 +11,10 @@ const LESSONS_FILE = {
           type: 'qcm', category: 'Arnaques', prompt: 'Un SMS te demande ta carte bancaire. Tu fais quoi ?', explanation: 'Jamais.',
           options: [{ text: 'Je supprime', correct: true }, { text: 'Je réponds', correct: false }],
         },
-        { type: 'scam', category: 'Arnaques', prompt: 'Ce SMS est-il une arnaque ?' },
+        {
+          type: 'scam', category: 'Arnaques', prompt: 'Ce SMS est-il une arnaque ?',
+          options: { sender: 'Ameli', channel: 'sms', message: 'Remboursement en attente', isScam: true, redFlags: ['Lien'] },
+        },
       ],
     },
     { title: 'Lire sa fiche de paie', screens: [{ title: 'Brut et net', body: 'Le net est ce que tu touches.' }] },
@@ -50,6 +53,7 @@ test("l'import de fichiers crée les leçons dans l'unité choisie", async ({ pa
     { letter: 'A', text: 'Je supprime', correct: true },
     { letter: 'B', text: 'Je réponds', correct: false },
   ]);
+  expect(sent.lessons[0].questions[1].options).toEqual(LESSONS_FILE.lessons[0].questions![1].options);
   // La fenêtre se ferme et la liste se recharge avec les nouvelles leçons.
   await expect(page.getByTestId('import-files')).toHaveCount(0);
   await expect(page.getByText('Lire sa fiche de paie')).toBeVisible();

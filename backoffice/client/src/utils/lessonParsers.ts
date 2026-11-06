@@ -1,4 +1,5 @@
-import { LessonScreen, LessonQuestion, QuizOption } from '../types/index.js';
+import { LessonScreen, LessonQuestion } from '../types/index.js';
+import { normalizeQuestionOptions } from './questionOptions.js';
 
 export interface ParsedLessonItem {
   title: string;
@@ -186,30 +187,11 @@ export function parseJSONLessons(content: string, fileName: string): ParsedLesso
           const prompt = q.prompt || q.question || q.intitule;
           if (!prompt) return;
 
-          let options: QuizOption[] = [];
-          if (Array.isArray(q.options)) {
-            options = q.options.map((opt: any, oIdx: number) => {
-              if (typeof opt === 'string') {
-                return {
-                  letter: String.fromCharCode(65 + oIdx),
-                  text: opt,
-                  correct: oIdx === 0,
-                };
-              }
-              return {
-                letter: opt.letter || String.fromCharCode(65 + oIdx),
-                text: opt.text || '',
-                correct: Boolean(opt.correct),
-              };
-            });
-          }
-
-          if (options.length > 0 && !options.some((o) => o.correct)) {
-            options[0].correct = true;
-          }
+          const type = q.type || 'qcm';
+          const options = normalizeQuestionOptions(type, q.options, q);
 
           questions.push({
-            type: q.type || 'qcm',
+            type,
             category: q.category || q.categorie || 'Quiz',
             prompt,
             options,

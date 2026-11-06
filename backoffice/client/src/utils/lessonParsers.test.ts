@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   getSampleLessonsCSV,
   getSampleLessonsJSON,
@@ -50,12 +52,46 @@ describe('parseJSONLessons', () => {
     expect(r.lessons[0].questions[0].type).toBe('scam');
   });
 
-  // Défaut connu : les options objet (arnaque, tri, scénario, document) sont remplacées par [].
-  // L'import unitaire (/import-export/lessons) les conserve depuis 5ef9eea, pas l'import groupé.
-  it.fails("conserve les options objet des exercices autres que QCM", () => {
-    const options = { sender: 'Ameli', message: 'Remboursement', isScam: true };
-    const r = parseJSONLessons(JSON.stringify({ title: 'T', questions: [{ type: 'scam', prompt: 'SMS ?', options }] }), 'x.json');
-    expect(r.lessons[0].questions[0].options).toEqual(options);
+  it("conserve telles quelles les options des exercices autres que QCM", () => {
+    const scam = { sender: 'Ameli', message: 'Remboursement', isScam: true };
+    const order = [{ id: '1', text: 'Appeler' }, { id: '2', text: 'Envoyer' }];
+    const matching = [{ id: '1', left: 'Visale', right: 'Caution gratuite' }];
+    const document = [{ id: '1', label: 'Brut', value: '2 050 €', correct: false }];
+    const r = parseJSONLessons(
+      JSON.stringify({
+        title: 'T',
+        questions: [
+          { type: 'scam', prompt: 'SMS ?', options: scam },
+          { type: 'order', prompt: 'Ordre ?', options: order },
+          { type: 'matching', prompt: 'Relie', options: matching },
+          { type: 'document', prompt: 'Trouve', options: document },
+        ],
+      }),
+      'x.json'
+    );
+    expect(r.lessons[0].questions.map((q) => q.options)).toEqual([scam, order, matching, document]);
+  });
+
+  it("garde la bonne réponse indiquée pour un QCM en texte simple", () => {
+    const r = parseJSONLessons(
+      JSON.stringify([{ title: 'T', questions: [{ prompt: 'Q', options: ['a', 'b'], correct: 'B' }] }]),
+      'x.json'
+    );
+    expect(r.lessons[0].questions[0].options).toEqual([
+      { letter: 'A', text: 'a', correct: false },
+      { letter: 'B', text: 'b', correct: true },
+    ]);
+  });
+
+  it("le fichier d'exemple avec tous les types garde chaque structure d'options", () => {
+    const raw = JSON.parse(readFileSync(resolve(__dirname, '../../../examples/00_lecon_complete_tous_types.json'), 'utf8'));
+    const source = (raw.lesson ?? raw.lessons?.[0] ?? raw).questions;
+    const r = parseJSONLessons(JSON.stringify(raw), '00.json');
+    expect(r.errors).toEqual([]);
+    expect(r.lessons[0].questions.map((q) => q.type)).toEqual(source.map((q: any) => q.type));
+    r.lessons[0].questions.forEach((q, i) => {
+      if (q.type !== 'qcm') expect(q.options).toEqual(source[i].options);
+    });
   });
 });
 

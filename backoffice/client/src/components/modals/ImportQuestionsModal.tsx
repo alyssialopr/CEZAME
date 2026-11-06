@@ -340,6 +340,7 @@ export const ImportQuestionsModal: React.FC<ImportQuestionsModalProps> = ({
                     </span>
                   </div>
 
+                  {q.type === 'qcm' && Array.isArray(q.options) ? (
                   <div className="flex flex-wrap gap-2 pt-0.5">
                     {q.options.map((opt: any, oIdx: number) => (
                       <span
@@ -356,6 +357,11 @@ export const ImportQuestionsModal: React.FC<ImportQuestionsModalProps> = ({
                       </span>
                     ))}
                   </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-500 pt-0.5">
+                      Exercice <strong>{q.type}</strong> : options importées telles quelles.
+                    </p>
+                  )}
 
                   {q.explanation && (
                     <p className="text-[10px] text-slate-400 italic pt-0.5">
