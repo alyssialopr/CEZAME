@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {
-  Briefcase,
+  Sparkles,
   User,
   CheckCircle2,
   AlertTriangle,
@@ -77,11 +77,11 @@ export function ScenarioExercise({
 
   return (
     <View style={styles.container}>
-      {/* Badge En-tête Cas Pratique */}
+      {/* Badge En-tête Cas Concret */}
       <View style={styles.badgeRow}>
         <View style={styles.badge}>
-          <Briefcase size={13} color="#2563EB" />
-          <Text style={styles.badgeText}>CAS PRATIQUE • MISE EN SITUATION</Text>
+          <Sparkles size={13} color="#2563EB" />
+          <Text style={styles.badgeText}>CAS CONCRET • VIE DU QUOTIDIEN</Text>
         </View>
 
         {persona?.name ? (
@@ -98,7 +98,7 @@ export function ScenarioExercise({
       <View style={styles.contextCard}>
         <View style={styles.contextHeader}>
           <Info size={16} color="#3B82F6" />
-          <Text style={styles.contextTitle}>La Situation</Text>
+          <Text style={styles.contextTitle}>Situation réelle</Text>
         </View>
 
         <Text style={styles.contextText}>{context}</Text>
@@ -118,7 +118,7 @@ export function ScenarioExercise({
 
       {/* Consigne d'action */}
       <Text style={styles.decisionPrompt}>
-        Quelle décision conseilles-tu dans cette situation ?
+        Quel est le bon réflexe dans cette situation ?
       </Text>
 
       {/* Choix des décisions */}

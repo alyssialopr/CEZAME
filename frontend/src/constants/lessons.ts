@@ -215,7 +215,7 @@ export const LESSONS: Record<string, LessonUnit> = {
       },
       {
         type: "scenario",
-        category: "Cas pratique",
+        category: "Situation concrète",
         prompt: "Aide Maxime à résoudre son imprévu financier de fin de mois.",
         options: {
           context: "Maxime, 21 ans, est étudiant et apprenti. Il lui reste 35 € sur son compte en banque alors que sa paie tombe dans 10 jours. Sa machine à laver vient de lâcher et une facture d'électricité de 55 € arrive dans 3 jours.",
@@ -436,7 +436,7 @@ export const LESSONS: Record<string, LessonUnit> = {
       },
       {
         type: "scenario",
-        category: "Cas pratique santé",
+        category: "Situation concrète santé",
         prompt: "Aide Sarah à choisir la bonne démarche pour sa consultation médicale.",
         options: {
           context: "Sarah a une forte fièvre et une toux persistante depuis 48h. Elle vient d'emménager dans une nouvelle ville pour ses études et n'a pas encore de médecin traitant déclaré ici.",
@@ -782,7 +782,7 @@ export const LESSONS: Record<string, LessonUnit> = {
       },
       {
         type: "scenario",
-        category: "Cas pratique logement",
+        category: "Situation concrète logement",
         prompt: "Aide Chloé à sécuriser sa candidature pour son premier studio.",
         options: {
           context: "Chloé a repéré une annonce séduisante. Le propriétaire lui demande d'envoyer par e-mail son dossier complet (CNI, avis d'imposition de ses parents, fiches de paie, RIB) avant même de confirmer la visite.",

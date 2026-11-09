@@ -1,8 +1,8 @@
 import { Image } from "expo-image";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
-import { Heart, HeartCrack, X } from "lucide-react-native";
+import { Heart, HeartCrack, X, BookOpen } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
+import { Animated, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
@@ -50,6 +50,7 @@ export default function LessonScreen() {
   const [isMatchingComplete, setIsMatchingComplete] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [isGameOverModalOpen, setIsGameOverModalOpen] = useState(false);
+  const [isLessonModalVisible, setIsLessonModalVisible] = useState(false);
 
   const { hearts, loseHeart, refillWithGems } = useHearts();
   const heartScaleAnim = useRef(new Animated.Value(1)).current;
@@ -440,7 +441,18 @@ export default function LessonScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.category}>{question.category}</Text>
+        <View style={styles.categoryHeaderRow}>
+          <Text style={styles.category}>{question.category}</Text>
+
+          <TouchableOpacity
+            testID="review-lesson-button"
+            style={styles.reviewLessonButton}
+            onPress={() => setIsLessonModalVisible(true)}
+            activeOpacity={0.7}>
+            <BookOpen size={14} color="#6366F1" />
+            <Text style={styles.reviewLessonButtonText}>Voir la leçon</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.speechWrapper}>
           <Image source={category.mascot} style={styles.mascot} contentFit="contain" />
@@ -616,6 +628,57 @@ export default function LessonScreen() {
         onRestartLesson={handleRestartLesson}
         onExit={handleExit}
       />
+
+      {/* MODAL REVOIR LA LEÇON */}
+      <Modal
+        visible={isLessonModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsLessonModalVisible(false)}>
+        <View style={[styles.modalContainer, { paddingTop: insets.top + 16 }]}>
+          <View style={styles.modalHeader}>
+            <View style={styles.modalTitleWrapper}>
+              <Text style={styles.modalCategoryLabel}>{category.label}</Text>
+              <Text style={styles.modalTitle}>{lesson.title}</Text>
+            </View>
+            <TouchableOpacity
+              testID="close-lesson-modal"
+              onPress={() => setIsLessonModalVisible(false)}
+              style={styles.modalCloseButton}>
+              <X size={22} color="#475569" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+            {(lesson.screens || []).map((sc: any, idx: number) => (
+              <View key={idx} style={styles.memoCard}>
+                <View style={styles.memoCardHeader}>
+                  <View style={styles.memoBadge}>
+                    <Text style={styles.memoBadgeText}>{idx + 1}</Text>
+                  </View>
+                  <Text style={styles.memoCardTitle}>{sc.title}</Text>
+                </View>
+                <Text style={styles.memoCardBody}>{sc.body}</Text>
+                {sc.tip && (
+                  <View style={styles.memoTipBox}>
+                    <Text style={styles.memoTipText}>💡 {sc.tip}</Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+
+          <View style={[styles.modalFooter, { paddingBottom: insets.bottom + 16 }]}>
+            <TouchableOpacity
+              testID="resume-quiz-button"
+              style={styles.resumeQuizButton}
+              onPress={() => setIsLessonModalVisible(false)}
+              activeOpacity={0.8}>
+              <Text style={styles.resumeQuizButtonText}>Reprendre les questions</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* L'écran leçon est un fullScreenModal : l'overlay racine peut passer
           derrière le modal sur iOS, on le rend donc aussi ici. */}
@@ -805,5 +868,146 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: "#7F1D1D",
+  },
+  categoryHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  reviewLessonButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+  },
+  reviewLessonButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#4F46E5",
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  modalTitleWrapper: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  modalCategoryLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6366F1",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#0F172A",
+    lineHeight: 26,
+  },
+  modalCloseButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: "#E2E8F0",
+  },
+  modalScroll: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    paddingVertical: 16,
+    gap: 14,
+  },
+  memoCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  memoCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  memoBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  memoBadgeText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#4338CA",
+  },
+  memoCardTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  memoCardBody: {
+    fontSize: 14,
+    color: "#334155",
+    lineHeight: 21,
+  },
+  memoTipBox: {
+    marginTop: 10,
+    backgroundColor: "#FEF3C7",
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+  },
+  memoTipText: {
+    fontSize: 13,
+    color: "#92400E",
+    fontWeight: "600",
+    lineHeight: 18,
+  },
+  modalFooter: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
+  },
+  resumeQuizButton: {
+    backgroundColor: "#1E293B",
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  resumeQuizButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

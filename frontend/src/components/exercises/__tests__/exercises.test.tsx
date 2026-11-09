@@ -39,6 +39,20 @@ describe('MatchingExercise', () => {
     await fireEvent.press(screen.getByTestId('matching-right-p1'));
     expect(onMistake).not.toHaveBeenCalled();
   });
+
+  it('permet de relier dans les deux sens (droite puis gauche)', async () => {
+    const onComplete = jest.fn();
+    await render(<MatchingExercise pairs={pairs} isRevealed={false} onComplete={onComplete} onMistake={jest.fn()} />);
+
+    // Clic d'abord à droite, puis à gauche
+    await fireEvent.press(screen.getByTestId('matching-right-p1'));
+    await fireEvent.press(screen.getByTestId('matching-left-p1'));
+
+    await fireEvent.press(screen.getByTestId('matching-right-p2'));
+    await fireEvent.press(screen.getByTestId('matching-left-p2'));
+
+    expect(onComplete).toHaveBeenCalledWith(true);
+  });
 });
 
 describe('OrderExercise', () => {
@@ -53,6 +67,20 @@ describe('OrderExercise', () => {
     // Avec 2 éléments, le mélange inverse forcément l'ordre.
     expect(onOrderChange).toHaveBeenLastCalledWith(false);
     await fireEvent.press(screen.getByTestId('order-down-0'));
+    expect(onOrderChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it('permet déchanger deux éléments en les touchant successivement (tap-to-swap)', async () => {
+    const onOrderChange = jest.fn();
+    const items = [
+      { id: 'a', text: 'Remplir le formulaire' },
+      { id: 'b', text: 'Envoyer les justificatifs' },
+    ];
+    await render(<OrderExercise items={items} isRevealed={false} onOrderChange={onOrderChange} />);
+
+    // Avec 2 éléments mélangés (b puis a), toucher b puis a les échange
+    await fireEvent.press(screen.getByText('Envoyer les justificatifs'));
+    await fireEvent.press(screen.getByText('Remplir le formulaire'));
     expect(onOrderChange).toHaveBeenLastCalledWith(true);
   });
 });

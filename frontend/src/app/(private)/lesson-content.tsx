@@ -1,19 +1,17 @@
 import { Image } from "expo-image";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
-import { Heart, X } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { ArrowLeft, Heart, X } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, type ViewInstance } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
-import { LESSON_STEPS } from "@/constants/lesson";
 import { LESSONS } from "@/constants/lessons";
 import { useLessonDetails } from "@/hooks/useLessons";
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useTutorial } from "@/providers/TutorialProvider";
 import { useHearts } from "@/providers/HeartsProvider";
 import { tracker } from "@/services/trackerService";
-import { useEffect } from "react";
 
 export default function LessonContentScreen() {
   const router = useRouter();
@@ -41,6 +39,16 @@ export default function LessonContentScreen() {
 
   const category = CATEGORIES.find((item) => item.id === categoryId);
 
+  useEffect(() => {
+    if (lesson && category) {
+      tracker.trackLessonEvent('lesson_started', effectiveLessonId, {
+        categoryId,
+        title: lesson.title,
+        totalScreens: lesson.screens?.length || 0,
+      });
+    }
+  }, [effectiveLessonId, categoryId, lesson, category]);
+
   if (!lesson || !category) {
     return <Redirect href="/categories" />;
   }
@@ -52,14 +60,6 @@ export default function LessonContentScreen() {
   const totalSteps = (screens.length || 1) + questionsCount;
   const progress = Math.max(0.06, (screenIndex + 0.3) / totalSteps);
 
-  useEffect(() => {
-    tracker.trackLessonEvent('lesson_started', effectiveLessonId, {
-      categoryId,
-      title: lesson?.title,
-      totalScreens: screens.length,
-    });
-  }, [effectiveLessonId]);
-
   function handleExit() {
     tracker.trackLessonEvent('lesson_abandoned', effectiveLessonId, {
       categoryId,
@@ -67,6 +67,12 @@ export default function LessonContentScreen() {
       screenIndex,
     });
     router.replace("/(private)/(tabs)");
+  }
+
+  function handleBack() {
+    if (screenIndex > 0) {
+      setScreenIndex((i) => i - 1);
+    }
   }
 
   function handleContinue() {
@@ -94,9 +100,15 @@ export default function LessonContentScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleExit}>
-          <X color="#AFAFB8" size={26} />
-        </TouchableOpacity>
+        {screenIndex > 0 ? (
+          <TouchableOpacity onPress={handleBack} testID="lesson-content-back" style={styles.headerIconButton}>
+            <ArrowLeft color="#1E293B" size={24} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={handleExit} style={styles.headerIconButton}>
+            <X color="#AFAFB8" size={26} />
+          </TouchableOpacity>
+        )}
 
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />

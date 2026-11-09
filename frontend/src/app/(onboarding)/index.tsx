@@ -10,13 +10,13 @@ import { useActiveCategory } from '@/providers/CategoryProvider';
 import { useTutorial } from '@/providers/TutorialProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Check, X as XIcon } from 'lucide-react-native';
 import Animated, { FadeInRight, FadeOutLeft, LinearTransition, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { tracker } from '@/services/trackerService';
-import { useEffect } from 'react';
 
 export default function OnboardingScreen() {
   const { session } = useAuth();
@@ -38,6 +38,16 @@ export default function OnboardingScreen() {
         ...prev[step.id],
         [questionKey]: !prev[step.id][questionKey]
       }
+    }));
+  };
+
+  const handleSetAnswer = (questionKey: string, value: boolean) => {
+    setAnswers((prev: any) => ({
+      ...prev,
+      [step.id]: {
+        ...prev[step.id],
+        [questionKey]: value,
+      },
     }));
   };
 
@@ -170,20 +180,47 @@ export default function OnboardingScreen() {
             {step.questions.map((q) => {
               const isChecked = answers[step.id][q.key];
               return (
-                <TouchableOpacity
+                <View
                   key={q.key}
                   style={[styles.questionCard, isChecked && styles.questionCardActive]}
-                  testID={`onboarding-question-${q.key}`}
-                  onPress={() => handleToggle(q.key)}
-                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.questionText, isChecked && styles.questionTextActive]}>
-                    {q.label}
-                  </Text>
-                  <View style={[styles.checkbox, isChecked && styles.checkboxActive]}>
-                    {isChecked && <View style={styles.checkmark} />}
+                  <TouchableOpacity
+                    style={styles.questionTextWrapper}
+                    testID={`onboarding-question-${q.key}`}
+                    onPress={() => handleToggle(q.key)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.questionText, isChecked && styles.questionTextActive]}>
+                      {q.label}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.choiceGroup}>
+                    <TouchableOpacity
+                      style={[styles.choiceBtn, isChecked && styles.choiceBtnYesActive]}
+                      testID={`onboarding-question-${q.key}-yes`}
+                      onPress={() => handleSetAnswer(q.key, true)}
+                      activeOpacity={0.7}
+                    >
+                      <Check size={14} color={isChecked ? '#15803D' : '#64748B'} strokeWidth={2.5} />
+                      <Text style={[styles.choiceBtnText, isChecked && styles.choiceBtnTextYesActive]}>
+                        Oui
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.choiceBtn, !isChecked && styles.choiceBtnNoActive]}
+                      testID={`onboarding-question-${q.key}-no`}
+                      onPress={() => handleSetAnswer(q.key, false)}
+                      activeOpacity={0.7}
+                    >
+                      <XIcon size={14} color={!isChecked ? '#475569' : '#94A3B8'} strokeWidth={2.5} />
+                      <Text style={[styles.choiceBtnText, !isChecked && styles.choiceBtnTextNoActive]}>
+                        Non
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                </TouchableOpacity>
+                </View>
               );
             })}
           </View>
@@ -338,53 +375,71 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   questionCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
+    padding: 16,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#EBEBEB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 8,
     elevation: 2,
+    gap: 12,
   },
   questionCardActive: {
     borderColor: '#A8EA73',
     backgroundColor: '#F9FFF4',
   },
+  questionTextWrapper: {
+    width: '100%',
+  },
   questionText: {
-    flex: 1,
     fontSize: 15,
     fontWeight: '500',
     color: '#333',
     lineHeight: 22,
-    paddingRight: 16,
   },
   questionTextActive: {
     color: '#1A1A1A',
+    fontWeight: '600',
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#D1D1D1',
-    justifyContent: 'center',
+  choiceGroup: {
+    flexDirection: 'row',
+    gap: 10,
+    alignSelf: 'flex-end',
+  },
+  choiceBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
   },
-  checkboxActive: {
-    borderColor: '#A8EA73',
-    backgroundColor: '#A8EA73',
+  choiceBtnYesActive: {
+    borderColor: '#86EFAC',
+    backgroundColor: '#DCFCE7',
   },
-  checkmark: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#FFF',
+  choiceBtnNoActive: {
+    borderColor: '#CBD5E1',
+    backgroundColor: '#E2E8F0',
+  },
+  choiceBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  choiceBtnTextYesActive: {
+    color: '#15803D',
+    fontWeight: '700',
+  },
+  choiceBtnTextNoActive: {
+    color: '#334155',
+    fontWeight: '700',
   },
   footer: {
     flexDirection: 'row',
