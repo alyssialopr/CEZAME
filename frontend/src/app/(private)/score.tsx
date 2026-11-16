@@ -15,10 +15,11 @@ export default function ScoreScreen() {
   const { addGems } = useRewards();
   const rewardedRef = useRef(false);
 
-  const { correct, total, hearts } = useLocalSearchParams<{
+  const { correct, total, hearts, xp } = useLocalSearchParams<{
     correct?: string;
     total?: string;
     hearts?: string;
+    xp?: string;
   }>();
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function ScoreScreen() {
       rewardedRef.current = true;
       addGems(10);
     }
-  }, [addGems]);
+  }, [addGems, progress?.streak]);
 
   function handleFinish() {
     tracker.trackClick('score_finish_button');
@@ -39,6 +40,7 @@ export default function ScoreScreen() {
   const streak = progress?.streak || 0;
   // Compute how many flames to color out of 7
   const activeFlames = streak === 0 ? 0 : streak % 7 === 0 ? 7 : streak % 7;
+  const earnedXp = xp && Number(xp) > 0 ? Number(xp) : 50;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -96,7 +98,7 @@ export default function ScoreScreen() {
           <View style={styles.rewardsRow}>
             <View style={styles.xpPill}>
               <Zap size={20} color="#1D8271" fill="#1D8271" />
-              <Text style={styles.xpText}>+50 XP</Text>
+              <Text testID="score-xp" style={styles.xpText}>+{earnedXp} XP</Text>
             </View>
             <View style={styles.gemPill}>
               <Gem size={20} color="#0284C7" fill="#0284C7" />

@@ -1,4 +1,4 @@
-import { nextStreak } from '@/lib/streak';
+import { computeLeagueProgress, computeRankFromXp, nextStreak } from '@/lib/streak';
 
 const NOW = new Date(2026, 10, 6, 15, 0, 0);
 const daysAgo = (n: number) => new Date(2026, 10, 6 - n, 20, 30, 0);
@@ -22,5 +22,29 @@ describe('nextStreak', () => {
 
   it('accepte une date ISO', () => {
     expect(nextStreak(2, daysAgo(1).toISOString(), NOW)).toBe(3);
+  });
+});
+
+describe('computeRankFromXp & computeLeagueProgress', () => {
+  it('calcule le rang selon les paliers XP', () => {
+    expect(computeRankFromXp(0)).toBe('bronze');
+    expect(computeRankFromXp(170)).toBe('bronze');
+    expect(computeRankFromXp(200)).toBe('silver');
+    expect(computeRankFromXp(500)).toBe('gold');
+    expect(computeRankFromXp(1000)).toBe('diamond');
+    expect(computeRankFromXp(2500)).toBe('rainbow');
+  });
+
+  it('calcule le pourcentage de progression dans la ligue courante', () => {
+    expect(computeLeagueProgress(100)).toEqual({
+      rank: 'bronze',
+      progressPercent: 50,
+      nextThreshold: 200,
+    });
+    expect(computeLeagueProgress(2200)).toEqual({
+      rank: 'rainbow',
+      progressPercent: 100,
+      nextThreshold: null,
+    });
   });
 });

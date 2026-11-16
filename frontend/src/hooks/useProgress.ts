@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { nextStreak } from '@/lib/streak';
+import { computeRankFromXp, nextStreak } from '@/lib/streak';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { Database } from '@/lib/database.types';
@@ -54,18 +54,27 @@ export function useUpdateStreak() {
   const userId = session?.user?.id;
 
   return useMutation({
-    mutationFn: async (currentProgress: Progress) => {
+    mutationFn: async (
+      input: Progress | { currentProgress: Progress; xpReward?: number }
+    ) => {
       if (!userId) throw new Error('User not authenticated');
 
-      const newStreak = nextStreak(currentProgress.streak, currentProgress.updated_at);
+      const currentProgress = 'currentProgress' in input ? input.currentProgress : input;
+      const xpReward =
+        'currentProgress' in input && typeof input.xpReward === 'number'
+          ? input.xpReward
+          : 50;
 
-      const newXp = currentProgress.xp + 50; // Add 50 XP per lesson
+      const newStreak = nextStreak(currentProgress.streak, currentProgress.updated_at);
+      const newXp = (currentProgress.xp || 0) + xpReward;
+      const newRank = computeRankFromXp(newXp);
 
       const { data, error } = await supabase
         .from('progress')
         .update({
           streak: newStreak,
           xp: newXp,
+          rank: newRank,
           updated_at: new Date().toISOString(),
         })
         .eq('id', currentProgress.id)

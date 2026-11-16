@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
+import { computeRankFromXp } from '@/lib/streak';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/AuthProvider';
 import { UnitReward } from '@/constants/categoryRewards';
@@ -123,9 +124,10 @@ export function RewardsProvider({ children }: { children: React.ReactNode }) {
 
           if (currentProgress) {
             const newXp = (currentProgress.xp || 0) + reward.amount;
+            const newRank = computeRankFromXp(newXp);
             await supabase
               .from('progress')
-              .update({ xp: newXp, updated_at: new Date().toISOString() })
+              .update({ xp: newXp, rank: newRank, updated_at: new Date().toISOString() })
               .eq('id', currentProgress.id);
 
             queryClient.invalidateQueries({ queryKey: ['progress', session.user.id] });
