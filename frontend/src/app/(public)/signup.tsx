@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import { Mail, Lock, UserPlus, User as UserIcon, FlaskConical } from 'lucide-react-native';
@@ -38,85 +48,96 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Image
-            source={require("@/images/RicoHappy.svg")}
-            style={styles.logo}
-            contentFit="contain"
-          />
-          <Text style={styles.title}>Rejoins-nous !</Text>
-          <Text style={styles.subtitle}>Crée ton compte CEZAME</Text>
-        </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <Image
+                source={require("@/images/RicoHappy.svg")}
+                style={styles.logo}
+                contentFit="contain"
+              />
+              <Text style={styles.title}>Rejoins-nous !</Text>
+              <Text style={styles.subtitle}>Crée ton compte CEZAME</Text>
+            </View>
 
-          <Link href="/login" asChild>
-          <TouchableOpacity style={styles.testerBanner}>
-            <FlaskConical size={16} color="#1D8271" />
-            <Text style={styles.testerBannerText}>
-              Testeur ? <Text style={{ textDecorationLine: 'underline', fontWeight: '800' }}>Rejoins avec ton prénom ici</Text>
-            </Text>
-          </TouchableOpacity>
-        </Link>
-
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <UserIcon color="#60646C" size={20} />
-            <TextInput
-              style={styles.input}
-              placeholder="Pseudo"
-              placeholderTextColor="#60646C"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="words"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Mail color="#60646C" size={20} />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#60646C"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Lock color="#60646C" size={20} />
-            <TextInput
-              style={styles.input}
-              placeholder="Mot de passe"
-              placeholderTextColor="#60646C"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={signUpWithEmail}
-            disabled={loading}
-          >
-            <UserPlus color="#3A6F1E" size={20} />
-            <Text style={styles.buttonText}>
-              {loading ? 'INSCRIPTION...' : "S'INSCRIRE"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Déjà un compte ?</Text>
             <Link href="/login" asChild>
-            <TouchableOpacity>
-              <Text style={styles.footerLink}>Se connecter</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-      </View>
+              <TouchableOpacity style={styles.testerBanner}>
+                <FlaskConical size={16} color="#1D8271" />
+                <Text style={styles.testerBannerText}>
+                  Testeur ? <Text style={{ textDecorationLine: 'underline', fontWeight: '800' }}>Rejoins avec ton prénom ici</Text>
+                </Text>
+              </TouchableOpacity>
+            </Link>
+
+            <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <UserIcon color="#60646C" size={20} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Pseudo"
+                  placeholderTextColor="#60646C"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Mail color="#60646C" size={20} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor="#60646C"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Lock color="#60646C" size={20} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mot de passe"
+                  placeholderTextColor="#60646C"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={signUpWithEmail}
+                disabled={loading}
+              >
+                <UserPlus color="#3A6F1E" size={20} />
+                <Text style={styles.buttonText}>
+                  {loading ? 'INSCRIPTION...' : "S'INSCRIRE"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Déjà un compte ?</Text>
+              <Link href="/login" asChild>
+                <TouchableOpacity>
+                  <Text style={styles.footerLink}>Se connecter</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -126,10 +147,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FBFAF8',
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
+  scrollContent: {
+    flexGrow: 1,
+    paddingVertical: 24,
     justifyContent: 'center',
+  },
+  content: {
+    paddingHorizontal: 24,
     maxWidth: 480,
     width: '100%',
     alignSelf: 'center',
