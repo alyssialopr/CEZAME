@@ -40,6 +40,14 @@ export default function SignupScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
+          <View style={styles.brandRow}>
+            <Image
+              source={require("@/images/logo.png")}
+              style={styles.brandLogo}
+              contentFit="contain"
+            />
+            <Text style={styles.brandText}>CEZAME</Text>
+          </View>
           <Image
             source={require("@/images/RicoHappy.svg")}
             style={styles.logo}
@@ -136,7 +144,23 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  brandLogo: {
+    width: 28,
+    height: 28,
+  },
+  brandText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#000000',
+    letterSpacing: 0.5,
   },
   logo: {
     width: 100,
