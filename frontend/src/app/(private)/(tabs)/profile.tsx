@@ -25,6 +25,7 @@ import {
 import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { computeLeagueProgress } from "@/lib/streak";
 import { supabase } from "@/lib/supabase";
 import { useProgress } from "@/hooks/useProgress";
 import { useRewards } from "@/hooks/useRewards";
@@ -103,7 +104,8 @@ export default function ProfileScreen() {
   const username = (user?.user_metadata?.username as string | undefined) || "Explorateur";
   const streak = progress?.streak ?? 0;
   const xp = progress?.xp ?? 0;
-  const rank = RANK_INFO[progress?.rank ?? "bronze"];
+  const league = computeLeagueProgress(xp);
+  const rank = RANK_INFO[league.rank];
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -127,7 +129,9 @@ export default function ProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileCard}>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => router.push("/(private)/(tabs)/settings")}>
             <Pencil size={14} color="#8A8A99" />
           </TouchableOpacity>
 
@@ -158,13 +162,23 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.leagueCard}>
-          <Text style={styles.leagueLabel}>LIGUE ACTUELLE</Text>
+          <View style={styles.leagueHeaderRow}>
+            <Text style={styles.leagueLabel}>LIGUE ACTUELLE</Text>
+            <Text style={styles.leagueXpTarget}>
+              {league.nextThreshold ? `${xp} / ${league.nextThreshold} XP` : `${xp} XP (Rang Max)`}
+            </Text>
+          </View>
           <View style={styles.leagueRow}>
             <Shield size={20} color={rank.color} />
             <Text style={[styles.leagueName, { color: rank.color }]}>{rank.label}</Text>
           </View>
           <View style={styles.leagueProgressTrack}>
-            <View style={[styles.leagueProgressFill, { backgroundColor: rank.color }]} />
+            <View
+              style={[
+                styles.leagueProgressFill,
+                { backgroundColor: rank.color, width: `${league.progressPercent}%` },
+              ]}
+            />
           </View>
         </View>
 
@@ -344,11 +358,21 @@ const styles = StyleSheet.create({
     padding: 18,
     gap: 10,
   },
+  leagueHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   leagueLabel: {
     fontSize: 11,
     fontWeight: "700",
     color: "#8A8A99",
     letterSpacing: 0.3,
+  },
+  leagueXpTarget: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#64748B",
   },
   leagueRow: {
     flexDirection: "row",

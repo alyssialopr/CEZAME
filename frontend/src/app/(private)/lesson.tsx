@@ -7,9 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CATEGORIES } from "@/constants/categories";
 import { TutorialOverlay } from "@/components/tutorial-overlay";
-import { LESSON_CONTENT_SCREENS, LESSON_STEPS } from "@/constants/lesson";
-import { LESSONS, LessonOption, QuestionType } from "@/constants/lessons";
-import { useProgress } from "@/hooks/useProgress";
+import { LESSONS, LessonOption } from "@/constants/lessons";
 import { useRewards } from "@/hooks/useRewards";
 import { useCompleteLesson, useLessonDetails } from "@/hooks/useLessons";
 import { OrderExercise } from "@/components/exercises/OrderExercise";
@@ -19,7 +17,7 @@ import { BucketExercise } from "@/components/exercises/BucketExercise";
 import { ScamExercise } from "@/components/exercises/ScamExercise";
 import { ScenarioExercise } from "@/components/exercises/ScenarioExercise";
 import { GameOverModal } from "@/components/GameOverModal";
-import { DocumentField, BucketData, BucketItem, ScamData, ScenarioData, ScenarioOption } from "@/types/lesson";
+import { DocumentField, BucketData, ScamData, ScenarioData, ScenarioOption } from "@/types/lesson";
 import {
   FALLBACK_BUCKET_DATA,
   isBucketAnswerCorrect,
@@ -29,6 +27,7 @@ import {
 import { useTutorialTarget } from "@/hooks/useTutorialTarget";
 import { useTutorial } from "@/providers/TutorialProvider";
 import { useHearts } from "@/providers/HeartsProvider";
+import { resolveQuestionType } from "@/services/lessonsService";
 import { tracker } from "@/services/trackerService";
 
 export default function LessonScreen() {
@@ -42,7 +41,7 @@ export default function LessonScreen() {
   const [selectedDocumentFieldId, setSelectedDocumentFieldId] = useState<string | null>(null);
   const [bucketAssignments, setBucketAssignments] = useState<Record<string, string>>({});
   const [isBucketSubmitted, setIsBucketSubmitted] = useState(false);
-  const [isBucketCorrect, setIsBucketCorrect] = useState(false);
+  const [, setIsBucketCorrect] = useState(false);
   const [scamUserChoice, setScamUserChoice] = useState<boolean | null>(null);
   const [selectedScenarioOptionId, setSelectedScenarioOptionId] = useState<string | null>(null);
   const [isOrderCorrect, setIsOrderCorrect] = useState(false);
@@ -52,6 +51,7 @@ export default function LessonScreen() {
   const [isGameOverModalOpen, setIsGameOverModalOpen] = useState(false);
   const [isLessonModalVisible, setIsLessonModalVisible] = useState(false);
 
+  const quizStartTimeRef = useRef<number>(Date.now());
   const { hearts, loseHeart, refillWithGems } = useHearts();
   const heartScaleAnim = useRef(new Animated.Value(1)).current;
   const { gems } = useRewards();
@@ -69,19 +69,12 @@ export default function LessonScreen() {
   const lesson = dbLesson || (localLesson ? {
     id: effectiveLessonId,
     title: localLesson.title,
+    xp_reward: 50,
     screens: localLesson.screens,
     questions: localLesson.questions,
   } : null);
 
   const category = CATEGORIES.find((item) => item.id === categoryId);
-
-  useEffect(() => {
-    if (effectiveLessonId) {
-      tracker.trackLessonEvent('lesson_started', effectiveLessonId, {
-        categoryId,
-      });
-    }
-  }, [effectiveLessonId, categoryId]);
 
   // Réinitialiser les états dès qu'on change de question
   useEffect(() => {
@@ -115,56 +108,15 @@ export default function LessonScreen() {
     } catch {}
   }
 
-  const firstElem = Array.isArray(rawOptions) ? rawOptions[0] : null;
-  const isScenarioPayload = Boolean(
-    (rawOptions && typeof rawOptions === 'object' && !Array.isArray(rawOptions) && (rawOptions.context !== undefined || (rawOptions.options && rawOptions.persona))) ||
-    (firstElem && typeof firstElem === 'object' && firstElem.context !== undefined)
-  );
-  const isScamPayload = Boolean(
-    (rawOptions && typeof rawOptions === 'object' && !Array.isArray(rawOptions) && (rawOptions.isScam !== undefined || rawOptions.sender !== undefined || rawOptions.channel !== undefined)) ||
-    (firstElem && typeof firstElem === 'object' && (firstElem.isScam !== undefined || firstElem.sender !== undefined))
-  );
-  const isBucketPayload = Boolean(
-    (rawOptions && typeof rawOptions === 'object' && !Array.isArray(rawOptions) && (rawOptions.buckets !== undefined || rawOptions.items !== undefined)) ||
-    (firstElem && typeof firstElem === 'object' && (firstElem.buckets !== undefined || firstElem.bucketId !== undefined)) ||
-    (Array.isArray(rawOptions) && rawOptions.some((it: any) => it?.bucketId !== undefined))
-  );
-
   const optionsArr = Array.isArray(rawOptions) ? rawOptions : [];
+  const exerciseType = resolveQuestionType(question?.type, rawOptions);
 
-  // Détection robuste du type d'exercice
-  const explicitType = question?.type as QuestionType | undefined;
-  let exerciseType: QuestionType;
-
-  if (explicitType === 'document') {
-    exerciseType = 'document';
-  } else if (explicitType === 'matching') {
-    exerciseType = 'matching';
-  } else if (explicitType === 'order') {
-    exerciseType = 'order';
-  } else if (explicitType === 'scam' || isScamPayload) {
-    exerciseType = 'scam';
-  } else if (explicitType === 'bucket' || isBucketPayload) {
-    exerciseType = 'bucket';
-  } else if (explicitType === 'scenario' || isScenarioPayload) {
-    exerciseType = 'scenario';
-  } else if (optionsArr[0]?.label !== undefined && optionsArr[0]?.value !== undefined) {
-    exerciseType = 'document';
-  } else if (optionsArr[0]?.left !== undefined) {
-    exerciseType = 'matching';
-  } else if (
-    optionsArr[0]?.id !== undefined &&
-    optionsArr[0]?.text !== undefined &&
-    optionsArr[0]?.label === undefined &&
-    optionsArr[0]?.letter === undefined
-  ) {
-    exerciseType = 'order';
-  } else {
-    exerciseType = explicitType || 'qcm';
-  }
-
-  const scenarioData: ScenarioData = (Array.isArray(rawOptions) && isScenarioPayload ? rawOptions[0] : rawOptions) as ScenarioData;
-  const scamData: ScamData = (Array.isArray(rawOptions) && isScamPayload ? rawOptions[0] : rawOptions) as ScamData;
+  const scenarioData: ScenarioData = (
+    Array.isArray(rawOptions) && exerciseType === 'scenario' ? rawOptions[0] : rawOptions
+  ) as ScenarioData;
+  const scamData: ScamData = (
+    Array.isArray(rawOptions) && exerciseType === 'scam' ? rawOptions[0] : rawOptions
+  ) as ScamData;
 
   let bucketData: BucketData = normalizeBucketData(rawOptions);
 
@@ -357,11 +309,15 @@ export default function LessonScreen() {
     }
 
     if (isLastQuestion) {
+      const xpReward = typeof (lesson as any).xp_reward === 'number' ? (lesson as any).xp_reward : 50;
+      const durationSeconds = Math.max(1, Math.round((Date.now() - quizStartTimeRef.current) / 1000));
+
       tracker.trackLessonEvent('lesson_completed', effectiveLessonId, {
         categoryId,
         score: correctCount,
         totalQuestions: questions.length,
         remainingHearts: hearts,
+        durationSeconds,
       });
 
       try {
@@ -369,6 +325,7 @@ export default function LessonScreen() {
           lessonId: effectiveLessonId,
           categoryId,
           score: correctCount,
+          xpReward,
         });
       } catch (e) {
         console.error("Error updating lesson completion", e);
@@ -380,6 +337,7 @@ export default function LessonScreen() {
           correct: String(correctCount),
           total: String(questions.length),
           hearts: String(hearts),
+          xp: String(xpReward),
         },
       });
       return;
@@ -396,6 +354,7 @@ export default function LessonScreen() {
 
   function handleRestartLesson() {
     setIsGameOverModalOpen(false);
+    quizStartTimeRef.current = Date.now();
     setQuestionIndex(0);
     setCorrectCount(0);
     setSelectedLetter(null);
@@ -413,6 +372,7 @@ export default function LessonScreen() {
   function handleExit() {
     tracker.trackLessonEvent('lesson_abandoned', effectiveLessonId, {
       categoryId,
+      stage: 'quiz',
       questionIndex,
       remainingHearts: hearts,
     });

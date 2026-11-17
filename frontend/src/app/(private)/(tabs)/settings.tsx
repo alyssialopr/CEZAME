@@ -38,6 +38,7 @@ import { useTutorial } from '@/providers/TutorialProvider';
 import { useProgress } from '@/hooks/useProgress';
 import { useRewards } from '@/hooks/useRewards';
 import { supabase } from '@/lib/supabase';
+import { tracker } from '@/services/trackerService';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -170,21 +171,38 @@ export default function SettingsScreen() {
     router.replace('/categories');
   };
 
-  // 3. Soumission du feedback utilisateur
-  const handleSubmitFeedback = () => {
+  // 3. Soumission du feedback utilisateur (persisté dans Supabase via trackerService)
+  const handleSubmitFeedback = async () => {
     if (!feedbackComment.trim() && rating === 0) {
       Alert.alert('Champ requis', 'Merci d\'indiquer une note ou un petit mot avant d\'envoyer.');
       return;
     }
 
     setFeedbackSubmitted(true);
-    setTimeout(() => {
+    try {
+      await tracker.track('tester_feedback', {
+        eventType: 'feedback',
+        userId: session?.user?.id ?? null,
+        properties: {
+          rating,
+          comment: feedbackComment.trim(),
+          username,
+          email,
+          xp: progress?.xp ?? 0,
+          streak: progress?.streak ?? 0,
+        },
+      });
+    } finally {
       setFeedbackSubmitted(false);
       setFeedbackModalVisible(false);
       setFeedbackComment('');
       setRating(5);
-      Alert.alert('Merci beaucoup ! 🙏', 'Ton retour a bien été enregistré. Il nous aide énormément à améliorer Cézame !');
-    }, 900);
+      if (Platform.OS === 'web') {
+        window.alert('Merci beaucoup ! Ton retour a bien été enregistré.');
+      } else {
+        Alert.alert('Merci beaucoup ! 🙏', 'Ton retour a bien été enregistré. Il nous aide énormément à améliorer Cézame !');
+      }
+    }
   };
 
   // 4. Déconnexion
@@ -298,6 +316,7 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.row}
+              testID="open-feedback-modal"
               onPress={() => setFeedbackModalVisible(true)}
               activeOpacity={0.7}>
               <View style={[styles.iconContainer, { backgroundColor: '#D1FAE5' }]}>
@@ -436,6 +455,7 @@ export default function SettingsScreen() {
             </Text>
             <TextInput
               style={styles.feedbackInput}
+              testID="feedback-comment-input"
               multiline
               numberOfLines={4}
               placeholder="Ex : J'ai adoré les explications avec Rico, mais la question sur les impôts était un peu floue..."
@@ -449,6 +469,7 @@ export default function SettingsScreen() {
                 styles.modalSubmitButton,
                 feedbackSubmitted && { opacity: 0.6 },
               ]}
+              testID="submit-feedback-button"
               onPress={handleSubmitFeedback}
               disabled={feedbackSubmitted}>
               <Text style={styles.modalSubmitButtonText}>

@@ -70,10 +70,10 @@ export function useCompleteLesson() {
       // 1. Marquer la leçon comme complétée
       await completeLesson(userId, lessonId, categoryId, score, xpReward);
 
-      // 2. Mettre à jour l'XP global et la streak de l'utilisateur
+      // 2. Mettre à jour l'XP global, le rang et la streak de l'utilisateur
       if (currentProgress) {
         try {
-          await updateStreak.mutateAsync(currentProgress);
+          await updateStreak.mutateAsync({ currentProgress, xpReward });
         } catch (e) {
           console.error('[useCompleteLesson] Erreur mise à jour streak/xp', e);
         }
