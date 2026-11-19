@@ -1,5 +1,4 @@
 {
-  "cleanUrls": true,
   "headers": [
     {
       "source": "/(favicon\\.png|logo\\.png|apple-touch-icon\\.png|og-image\\.png|manifest\\.json|robots\\.txt|sitemap\\.xml)",
