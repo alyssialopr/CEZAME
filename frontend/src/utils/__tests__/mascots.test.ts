@@ -25,5 +25,11 @@ describe('getMascotSource', () => {
     expect(getMascotSource('RicoBleuTravail', undefined, 'enerve')).toEqual(
       require('@/images/emotions/RicoBleuTravail_Angry.png')
     );
+    expect(getMascotSource('RicoHappy', undefined, 'warm')).toEqual(
+      require('@/images/emotions/RicoHappy_Warm.png')
+    );
+    expect(getMascotSource('RicoHappy', undefined, 'triste')).toEqual(
+      require('@/images/emotions/RicoHappy_Sad.png')
+    );
   });
 });

@@ -5,7 +5,8 @@ export type RicoVariation =
   | 'RicoEntrepriseDroit'
   | 'RicoEntreprise'
   | 'RicoBleuTravail'
-  | 'Riconstruction';
+  | 'Riconstruction'
+  | 'RicoHappy';
 
 export type RicoEmotion =
   | 'default'
@@ -116,6 +117,16 @@ const MASCOT_EMOTION_MAP: Record<RicoVariation, Record<CanonicalEmotion, any>> =
     Cold: require('@/images/emotions/Riconstruction_Cold.png'),
     Warm: require('@/images/emotions/Riconstruction_Warm.png'),
     Angry: require('@/images/emotions/Riconstruction_Angry.png'),
+  },
+  RicoHappy: {
+    Sad: require('@/images/emotions/RicoHappy_Sad.png'),
+    Surprised: require('@/images/emotions/RicoHappy_Surprised.png'),
+    Thoughtful: require('@/images/emotions/RicoHappy_Thoughtful.png'),
+    Proud: require('@/images/emotions/RicoHappy_Proud.png'),
+    Worried: require('@/images/emotions/RicoHappy_Worried.png'),
+    Cold: require('@/images/emotions/RicoHappy_Cold.png'),
+    Warm: require('@/images/emotions/RicoHappy_Warm.png'),
+    Angry: require('@/images/emotions/RicoHappy_Angry.png'),
   },
 };
 
