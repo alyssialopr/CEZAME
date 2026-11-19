@@ -62,12 +62,11 @@ export default function SignupScreen() {
             <View style={styles.header}>
              <View style={styles.brandRow}>
               <Image
-              source={require("@/images/logo.png")}
-              style={styles.brandLogo}
-              contentFit="contain"
-            />
-            <Text style={styles.brandText}>CEZAME</Text>
-          </View>
+                source={require("@/images/logo-horizontal.png")}
+                style={styles.brandLogo}
+                contentFit="contain"
+              />
+            </View>
           <Image
             source={require("@/images/RicoHappy.svg")}
             style={styles.logo}
@@ -178,14 +177,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   brandLogo: {
-    width: 28,
-    height: 28,
-  },
-  brandText: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#000000',
-    letterSpacing: 0.5,
+    width: 132,
+    height: 46,
   },
   logo: {
     width: 100,

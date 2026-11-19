@@ -77,7 +77,13 @@ export default function LoginScreen() {
                 style={styles.logo}
                 contentFit="contain"
               />
-              <Text style={styles.title}>CEZAME</Text>
+              <View style={styles.brandRow}>
+                <Image
+                  source={require("@/images/logo-horizontal.png")}
+                  style={styles.brandLogo}
+                  contentFit="contain"
+                />
+              </View>
               <Text style={styles.subtitle}>Phase de Test Utilisateur</Text>
             </View>
 
@@ -210,14 +216,17 @@ const styles = StyleSheet.create({
   logo: {
     width: 84,
     height: 84,
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#000000',
-    letterSpacing: 0.5,
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 4,
+  },
+  brandLogo: {
+    width: 132,
+    height: 46,
   },
   subtitle: {
     fontSize: 14,

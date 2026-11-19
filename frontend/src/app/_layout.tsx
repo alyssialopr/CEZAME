@@ -4,6 +4,7 @@ import { Stack, usePathname } from 'expo-router';
 import { Platform, StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { SeoHead } from '@/components/seo-head';
 import { TutorialOverlay } from '@/components/tutorial-overlay';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { CategoryProvider } from '@/providers/CategoryProvider';
@@ -43,6 +44,7 @@ export default function RootLayout() {
               <RewardsProvider>
                 <HeartsProvider>
                   <TutorialProvider>
+                    <SeoHead />
                     <RouteObserver />
                     <AnimatedSplashOverlay />
                     <Stack screenOptions={{ headerShown: false }}>

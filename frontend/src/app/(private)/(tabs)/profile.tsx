@@ -114,11 +114,10 @@ export default function ProfileScreen() {
           style={styles.logoContainer}
           onPress={() => router.push("/categories")}>
           <Image
-            source={require("@/images/logo.png")}
+            source={require("@/images/logo-horizontal.png")}
             style={styles.logoImage}
             contentFit="contain"
           />
-          <Text style={styles.logo}>CEZAME</Text>
         </TouchableOpacity>
 
         <View style={styles.stat}>
@@ -263,14 +262,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logoImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  logo: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#7C4DFF",
+    width: 112,
+    height: 38,
   },
   stat: {
     flexDirection: "row",
