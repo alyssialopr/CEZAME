@@ -50,11 +50,10 @@ export default function CategoriesScreen() {
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <Image
-            source={require("@/images/logo.png")}
+            source={require("@/images/logo-horizontal.png")}
             style={styles.logoImage}
             contentFit="contain"
           />
-          <Text style={styles.logoText}>CEZAME</Text>
         </View>
 
         <View style={styles.stats}>
@@ -129,14 +128,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logoImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  logoText: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#7C4DFF",
+    width: 112,
+    height: 38,
   },
   stats: {
     flexDirection: "row",

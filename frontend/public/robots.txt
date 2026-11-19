@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /signup
+Allow: /categories
+Disallow: /score
+Disallow: /lesson
+Disallow: /lesson-content
+Disallow: /profile
+Disallow: /settings
+
+Sitemap: https://cezame.app/sitemap.xml

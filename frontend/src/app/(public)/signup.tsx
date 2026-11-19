@@ -38,8 +38,25 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
+      
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <View style={styles.header}>
+             <View style={styles.brandRow}>
+              <Image
+                source={require("@/images/logo-horizontal.png")}
+                style={styles.brandLogo}
+                contentFit="contain"
+              />
+            </View>
           <Image
             source={require("@/images/RicoHappy.svg")}
             style={styles.logo}
@@ -136,7 +153,17 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  brandLogo: {
+    width: 132,
+    height: 46,
   },
   logo: {
     width: 100,

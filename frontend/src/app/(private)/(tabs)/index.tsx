@@ -68,11 +68,10 @@ export default function HomeScreen() {
               router.push("/categories");
             }}>
             <Image
-              source={require("@/images/logo.png")}
+              source={require("@/images/logo-horizontal.png")}
               style={styles.logoImage}
               contentFit="contain"
             />
-            <Text style={styles.logo}>CEZAME</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -200,15 +199,8 @@ const styles = StyleSheet.create({
   },
 
   logoImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-
-  logo: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#7C4DFF",
+    width: 112,
+    height: 38,
   },
 
   stats: {

@@ -219,11 +219,10 @@ export default function SettingsScreen() {
           style={styles.logoContainer}
           onPress={() => router.push('/categories')}>
           <Image
-            source={require('@/images/logo.png')}
+            source={require('@/images/logo-horizontal.png')}
             style={styles.logoImage}
             contentFit="contain"
           />
-          <Text style={styles.logoText}>CEZAME</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Paramètres</Text>
       </View>
@@ -486,14 +485,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logoImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  logoText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#7C4DFF',
+    width: 112,
+    height: 38,
   },
   headerTitle: {
     fontSize: 16,
