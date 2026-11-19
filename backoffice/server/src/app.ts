@@ -9,6 +9,9 @@ import contentRoutes from './routes/content.routes.js';
 import importExportRoutes from './routes/import-export.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import activityRoutes from './routes/activity.routes.js';
+import mcpRoutes from './routes/mcp.routes.js';
+import { mcpAuth } from './middleware/mcpAuth.js';
+import { getEnvironment } from './config/env.js';
 import { hasServiceRoleKey } from './config/supabase.js';
 
 dotenv.config();
@@ -47,11 +50,13 @@ app.use('/api/content', contentRoutes);
 app.use('/api/import-export', importExportRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/activity', activityRoutes);
+app.use('/api/mcp', mcpAuth, mcpRoutes);
 
 // Statut de santé du serveur
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
+    environment: getEnvironment(),
     timestamp: new Date().toISOString(),
     serviceRoleConfigured: hasServiceRoleKey,
   });
