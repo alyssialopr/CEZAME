@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import { Mail, Lock, UserPlus, User as UserIcon, FlaskConical } from 'lucide-react-native';
@@ -134,6 +144,8 @@ export default function SignupScreen() {
           </Link>
         </View>
       </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -142,6 +154,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FBFAF8',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingVertical: 24,
   },
   content: {
     flex: 1,
