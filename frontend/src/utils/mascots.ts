@@ -138,22 +138,34 @@ const CATEGORY_DEFAULT_MASCOTS: Record<string, RicoVariation> = {
   logement: 'Riconstruction',
 };
 
+function resolveVariation(mascotName?: string | null, categoryId?: string): string {
+  if (mascotName && MASCOT_MAP[mascotName]) {
+    return mascotName;
+  }
+  if (categoryId && CATEGORY_DEFAULT_MASCOTS[categoryId]) {
+    return CATEGORY_DEFAULT_MASCOTS[categoryId];
+  }
+  return 'RicoEntreprise';
+}
+
 /**
- * Retourne la source de l'image (SVG) selon le nom de la mascotte,
- * avec repli automatique sur la mascotte par défaut de la catégorie.
+ * Retourne la source de l'image (SVG par défaut ou PNG d'émotion)
+ * selon le nom de la mascotte, la catégorie et l'émotion demandée.
  */
 export function getMascotSource(
   mascotName?: string | null,
-  categoryId?: string
+  categoryId?: string,
+  emotion?: RicoEmotion | null
 ): any {
-  if (mascotName && MASCOT_MAP[mascotName]) {
-    return MASCOT_MAP[mascotName];
+  const resolved = resolveVariation(mascotName, categoryId);
+
+  if (emotion && emotion !== 'default') {
+    const canonical = EMOTION_ALIASES[emotion.toLowerCase()];
+    const variationMap = MASCOT_EMOTION_MAP[resolved as RicoVariation];
+    if (canonical && variationMap?.[canonical]) {
+      return variationMap[canonical];
+    }
   }
 
-  if (categoryId && CATEGORY_DEFAULT_MASCOTS[categoryId]) {
-    const defaultName = CATEGORY_DEFAULT_MASCOTS[categoryId];
-    return MASCOT_MAP[defaultName] || MASCOT_MAP.RicoEntreprise;
-  }
-
-  return MASCOT_MAP.RicoEntreprise;
+  return MASCOT_MAP[resolved] || MASCOT_MAP.RicoEntreprise;
 }
