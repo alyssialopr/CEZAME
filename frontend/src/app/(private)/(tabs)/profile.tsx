@@ -1,5 +1,7 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Award,
   Car,
@@ -20,9 +22,21 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
+  X,
   Zap,
 } from "lucide-react-native";
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { supabase } from "@/lib/supabase";
@@ -31,6 +45,7 @@ import { useRewards } from "@/hooks/useRewards";
 import { useAuth } from "@/providers/AuthProvider";
 import { useTutorial } from "@/providers/TutorialProvider";
 import { UNIT_BADGES, UnitBadge } from "@/constants/categoryRewards";
+import { updateUsername, USERNAME_MAX_LENGTH } from "@/services/profileService";
 
 const BADGE_ICON_MAP: Record<string, any> = {
   Footprints,
@@ -71,6 +86,13 @@ export default function ProfileScreen() {
   const { data: progress } = useProgress();
   const { gems, unlockedBadges } = useRewards();
   const { requestTutorial } = useTutorial();
+  const queryClient = useQueryClient();
+
+  // Modification du profil (crayon)
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [draftUsername, setDraftUsername] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleLogout = () => {
     const doLogout = () => {
@@ -101,6 +123,33 @@ export default function ProfileScreen() {
   };
 
   const username = (user?.user_metadata?.username as string | undefined) || "Explorateur";
+
+  const openEdit = () => {
+    setDraftUsername((user?.user_metadata?.username as string | undefined) ?? "");
+    setEditError(null);
+    setIsEditOpen(true);
+  };
+
+  const closeEdit = () => {
+    if (isSaving) return;
+    setIsEditOpen(false);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user || isSaving) return;
+    setIsSaving(true);
+    setEditError(null);
+    const result = await updateUsername(user.id, draftUsername);
+    setIsSaving(false);
+    if (!result.success) {
+      setEditError(result.error);
+      return;
+    }
+    // La session est rafraîchie par Supabase (USER_UPDATED) : le nouveau pseudo
+    // s'affiche partout. On invalide aussi le profil en cache (table users).
+    queryClient.invalidateQueries({ queryKey: ["userProfile", user.id] });
+    setIsEditOpen(false);
+  };
   const streak = progress?.streak ?? 0;
   const xp = progress?.xp ?? 0;
   const rank = RANK_INFO[progress?.rank ?? "bronze"];
@@ -126,7 +175,13 @@ export default function ProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileCard}>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={openEdit}
+            testID="profile-edit-button"
+            accessibilityRole="button"
+            accessibilityLabel="Modifier mon profil"
+            hitSlop={10}>
             <Pencil size={14} color="#8A8A99" />
           </TouchableOpacity>
 
@@ -221,11 +276,151 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Se déconnecter</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal visible={isEditOpen} transparent animationType="fade" onRequestClose={closeEdit}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Modifier mon profil</Text>
+              <TouchableOpacity onPress={closeEdit} hitSlop={10} accessibilityLabel="Fermer">
+                <X size={22} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.fieldLabel}>Pseudo</Text>
+            <TextInput
+              style={[styles.fieldInput, editError ? styles.fieldInputError : null]}
+              testID="profile-username-input"
+              value={draftUsername}
+              onChangeText={(value) => {
+                setDraftUsername(value);
+                if (editError) setEditError(null);
+              }}
+              onSubmitEditing={handleSaveProfile}
+              returnKeyType="done"
+              placeholder="Ton pseudo"
+              placeholderTextColor="#AFAFB8"
+              maxLength={USERNAME_MAX_LENGTH}
+              autoCapitalize="words"
+              autoCorrect={false}
+              autoFocus
+              editable={!isSaving}
+            />
+            {editError && (
+              <Text style={styles.fieldError} testID="profile-edit-error" accessibilityRole="alert">
+                {editError}
+              </Text>
+            )}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelButton} onPress={closeEdit} disabled={isSaving}>
+                <Text style={styles.cancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+                onPress={handleSaveProfile}
+                disabled={isSaving}
+                testID="profile-save-button">
+                {isSaving ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.saveText}>Enregistrer</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15,23,42,0.5)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    width: "100%",
+    maxWidth: 420,
+    alignSelf: "center",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1A1A1A",
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#60646C",
+    marginBottom: 6,
+  },
+  fieldInput: {
+    borderWidth: 2,
+    borderColor: "#E5E5E5",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 50,
+    fontSize: 15,
+    color: "#1A1A1A",
+    backgroundColor: "#FBFAF8",
+  },
+  fieldInputError: {
+    borderColor: "#D93025",
+    backgroundColor: "#FFF6F5",
+  },
+  fieldError: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#D93025",
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 20,
+  },
+  cancelButton: {
+    paddingHorizontal: 18,
+    height: 46,
+    borderRadius: 100,
+    justifyContent: "center",
+  },
+  cancelText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#8A8A99",
+  },
+  saveButton: {
+    backgroundColor: "#7C4DFF",
+    paddingHorizontal: 24,
+    height: 46,
+    minWidth: 130,
+    borderRadius: 100,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
+  },
+  saveText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
   container: {
     flex: 1,
     backgroundColor: "#F6F5F8",

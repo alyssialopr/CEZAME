@@ -61,6 +61,7 @@ export const supabase = {
   auth: {
     signUp: jest.fn(),
     signInWithPassword: jest.fn(),
+    updateUser: jest.fn(async () => ({ data: { user: null }, error: null })),
     signOut: jest.fn(async () => ({ error: null })),
     getSession: jest.fn(async () => ({ data: { session: null }, error: null })),
     getUser: jest.fn(async () => ({ data: { user: null }, error: null })),
@@ -75,4 +76,5 @@ export function resetFake() {
   supabase.rpc.mockClear();
   supabase.auth.signUp.mockReset();
   supabase.auth.signInWithPassword.mockReset();
+  supabase.auth.updateUser.mockClear();
 }
