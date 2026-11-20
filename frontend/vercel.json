@@ -1,7 +1,20 @@
 {
   "headers": [
     {
-      "source": "/(favicon\\.png|logo\\.png|apple-touch-icon\\.png|og-image\\.png|manifest\\.json|robots\\.txt|sitemap\\.xml)",
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    },
+    {
+      "source": "/(favicon\\.png|logo\\.png|logo-1024\\.png|apple-touch-icon\\.png|og-image\\.png|manifest\\.json|robots\\.txt|sitemap\\.xml)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -12,7 +25,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!_expo|assets|favicon\\.png|favicon\\.ico|logo\\.png|apple-touch-icon\\.png|og-image\\.png|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
+      "source": "/((?!_expo|assets|sw\\.js|favicon\\.png|favicon\\.ico|logo\\.png|logo-1024\\.png|apple-touch-icon\\.png|og-image\\.png|manifest\\.json|robots\\.txt|sitemap\\.xml).*)",
       "destination": "/index.html"
     }
   ]
