@@ -46,3 +46,31 @@ test("un utilisateur termine une leçon : fiche, quiz, cœurs et score", async (
   await page.getByTestId('score-continue').click();
   await expect(page.getByTestId(`lesson-completed-${LESSON_ID}`)).toBeVisible();
 });
+
+// Retour testeurs (nov. 2026) : sur les petits téléphones la mascotte poussait
+// le bouton CONTINUER hors de l'écran.
+for (const viewport of [
+  { width: 320, height: 568 }, // iPhone SE (1re gén.)
+  { width: 375, height: 667 }, // iPhone SE / 8
+  { width: 360, height: 640 }, // Android compact
+  { width: 412, height: 915 }, // grand Android
+]) {
+  test(`le bouton CONTINUER du score est visible sans défiler (${viewport.width}x${viewport.height})`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    const db = new SupabaseMock();
+    seedFinanceContent(db);
+    const user = seedOnboardedUser(db);
+    await db.install(page);
+
+    await page.goto('/login');
+    await page.getByTestId('email-input').fill(user.email);
+    await page.getByTestId('password-input').fill(user.password);
+    await page.getByTestId('email-login-button').click();
+    await expect(page).not.toHaveURL(/\/login$/);
+
+    await page.goto('/score?correct=1&total=2&hearts=4');
+    const button = page.getByTestId('score-continue');
+    await expect(button).toBeVisible();
+    await expect(button).toBeInViewport({ ratio: 1 });
+  });
+}

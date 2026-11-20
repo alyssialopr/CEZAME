@@ -1,13 +1,26 @@
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Award, Flame, Gem, Heart, Zap } from "lucide-react-native";
-import { StyleSheet, Text, TouchableOpacity, View, Dimensions } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ConfettiCannon from "react-native-confetti-cannon";
 import { useProgress } from "@/hooks/useProgress";
 import { useRewards } from "@/hooks/useRewards";
 import { tracker } from "@/services/trackerService";
 import { useEffect, useRef } from "react";
+
+// La mascotte occupe ~24 % de la hauteur d'écran + 5 px (entre 101 et 225 px) :
+// sur un petit téléphone, le bouton CONTINUER reste visible sans défilement.
+const MASCOT_MIN = 101;
+const MASCOT_MAX = 225;
+const MASCOT_EXTRA = 5;
+const MASCOT_SCREEN_RATIO = 0.24;
+// En dessous de cette hauteur, les espacements et les textes sont resserrés.
+const COMPACT_HEIGHT = 720;
+
+function mascotHeightFor(screenHeight: number): number {
+  return Math.round(Math.min(MASCOT_MAX, Math.max(MASCOT_MIN, screenHeight * MASCOT_SCREEN_RATIO + MASCOT_EXTRA)));
+}
 
 export default function ScoreScreen() {
   const router = useRouter();
@@ -34,8 +47,10 @@ export default function ScoreScreen() {
     router.dismissTo("/");
   }
 
-  const { width, height } = Dimensions.get("window");
-  
+  const { width, height } = useWindowDimensions();
+  const isCompact = height < COMPACT_HEIGHT;
+  const mascotHeight = mascotHeightFor(height);
+
   const streak = progress?.streak || 0;
   // Compute how many flames to color out of 7
   const activeFlames = streak === 0 ? 0 : streak % 7 === 0 ? 7 : streak % 7;
@@ -51,21 +66,28 @@ export default function ScoreScreen() {
         explosionSpeed={350}
       />
       <View style={styles.container}>
-        <View style={styles.content}>
+        {/* Le contenu défile si besoin ; le pied de page (CONTINUER) reste fixé en bas. */}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[styles.content, isCompact && styles.contentCompact]}
+          showsVerticalScrollIndicator={false}
+          bounces={false}>
           <Image
             source={require("@/images/RicoJoy.svg")}
-            style={styles.mascot}
+            style={[styles.mascot, { height: mascotHeight }, isCompact && styles.mascotCompact]}
             contentFit="contain"
           />
 
-          <Text testID="score-title" style={styles.title}>FÉLICITATIONS !</Text>
+          <Text testID="score-title" style={[styles.title, isCompact && styles.titleCompact]}>
+            FÉLICITATIONS !
+          </Text>
 
-          <View style={styles.streakCard}>
+          <View style={[styles.streakCard, isCompact && styles.streakCardCompact]}>
             <View style={styles.flamesRow}>
               {[1, 2, 3, 4, 5, 6, 7].map((day) => (
                 <Flame
                   key={day}
-                  size={32}
+                  size={isCompact ? 26 : 32}
                   color={day <= activeFlames ? "#FF9600" : "#E5E5E5"}
                   fill={day <= activeFlames ? "#FF9600" : "#E5E5E5"}
                 />
@@ -103,9 +125,9 @@ export default function ScoreScreen() {
               <Text style={styles.gemText}>+10 💎</Text>
             </View>
           </View>
-        </View>
+        </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, isCompact && styles.footerCompact]}>
           <TouchableOpacity testID="score-continue" style={styles.finishButton} onPress={handleFinish}>
             <Text style={styles.finishText}>CONTINUER</Text>
           </TouchableOpacity>
@@ -126,22 +148,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  scroll: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  contentCompact: {
+    paddingVertical: 8,
   },
   mascot: {
     width: "100%",
-    height: 350,
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  mascotCompact: {
+    marginBottom: 8,
   },
   title: {
     fontSize: 32,
     fontWeight: "800",
     color: "#000000",
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  titleCompact: {
+    fontSize: 26,
+    marginBottom: 12,
   },
   streakCard: {
     backgroundColor: "#FFFFFF",
@@ -151,8 +186,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#E5E5E5",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 20,
     width: "100%",
+  },
+  streakCardCompact: {
+    paddingVertical: 12,
+    marginBottom: 12,
   },
   flamesRow: {
     flexDirection: "row",
@@ -233,6 +272,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderTopColor: "#E5E5E5",
     backgroundColor: "#FBFAF8",
+  },
+  footerCompact: {
+    paddingVertical: 12,
   },
   finishButton: {
     backgroundColor: "#A8EA73",
