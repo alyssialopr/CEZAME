@@ -14,7 +14,7 @@
   "icons": [
     {
       "src": "/favicon.png",
-      "sizes": "192x192",
+      "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
@@ -25,7 +25,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/logo.png",
+      "src": "/logo-1024.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any"
