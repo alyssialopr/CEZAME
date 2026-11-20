@@ -24,7 +24,24 @@ test("des identifiants refusés laissent l'utilisateur sur la connexion", async 
 
   await expect.poll(() => db.requests.some((r) => r.path.startsWith('/auth/v1/token'))).toBe(true);
   await expect(page).toHaveURL(/\/login$/);
+  // Le message d'erreur s'affiche sous « OU CONNEXION COMPTE » (Alert.alert est muet sur le web).
+  await expect(page.getByTestId('login-error')).toHaveText(
+    'Email ou mot de passe incorrect. Vérifie tes identifiants et réessaie.',
+  );
   await expect(page.getByTestId('email-login-button')).not.toHaveAttribute('aria-disabled', 'true');
+
+  // Le message disparaît dès que l'utilisateur corrige son mot de passe.
+  await page.getByTestId('password-input').fill('mauvais2');
+  await expect(page.getByTestId('login-error')).toHaveCount(0);
+});
+
+test('les champs vides affichent un message sans appel réseau', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByTestId('email-login-button').click();
+
+  await expect(page.getByTestId('email-error')).toHaveText('Merci de renseigner ton adresse email.');
+  await expect(page.getByTestId('password-error')).toHaveText('Merci de renseigner ton mot de passe.');
+  expect(db.requests.some((r) => r.path.startsWith('/auth/v1/token'))).toBe(false);
 });
 
 test("un testeur se connecte par son prénom, fait l'onboarding et reçoit sa recommandation", async ({ page }) => {

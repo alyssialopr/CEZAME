@@ -680,9 +680,11 @@ export default function LessonScreen() {
         </View>
       </Modal>
 
-      {/* L'écran leçon est un fullScreenModal : l'overlay racine peut passer
-          derrière le modal sur iOS, on le rend donc aussi ici. */}
-      <TutorialOverlay />
+      {/* L'écran leçon est un fullScreenModal sur mobile : l'overlay racine peut
+          passer derrière le modal, on le rend donc aussi ici. Sur le web l'écran
+          est une simple carte : l'overlay racine suffit (sinon double fond sombre
+          et double bulle). */}
+      {Platform.OS !== 'web' && <TutorialOverlay />}
     </View>
   );
 }

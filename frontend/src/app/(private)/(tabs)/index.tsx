@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -44,13 +44,17 @@ export default function HomeScreen() {
   useTutorialTarget("lesson-node", lessonNodeRef);
 
   // Démarre le tuto au 1er passage sur le home après une demande explicite
-  // (fin d'onboarding ou « Revoir le tutoriel »).
-  useEffect(() => {
-    if (tutorialPending && !tutorialActive) {
-      const homeStepIndex = TUTORIAL_STEPS.findIndex((s) => s.screen === 'home');
-      startTutorial(homeStepIndex >= 0 ? homeStepIndex : 0);
-    }
-  }, [tutorialPending, tutorialActive, startTutorial]);
+  // (fin d'onboarding ou « Revoir le tutoriel »). Uniquement quand le home est
+  // réellement affiché : l'onglet reste monté derrière Profil/Réglages/Thèmes,
+  // et démarrer depuis l'arrière-plan sautait l'étape du choix de thème.
+  useFocusEffect(
+    useCallback(() => {
+      if (tutorialPending && !tutorialActive) {
+        const homeStepIndex = TUTORIAL_STEPS.findIndex((s) => s.screen === 'home');
+        startTutorial(homeStepIndex >= 0 ? homeStepIndex : 0);
+      }
+    }, [tutorialPending, tutorialActive, startTutorial]),
+  );
 
   if (!isInitialized) return null; // or a loader
 

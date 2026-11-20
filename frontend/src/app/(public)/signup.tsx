@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -22,9 +21,11 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState<{ kind: 'error' | 'info'; message: string } | null>(null);
 
   async function signUpWithEmail() {
     setLoading(true);
+    setFeedback(null);
     const {
       data: { session },
       error,
@@ -38,10 +39,11 @@ export default function SignupScreen() {
       },
     });
 
+    // Alert.alert ne s'affiche pas sur le web : le retour est affiché sous le formulaire.
     if (error) {
-      Alert.alert('Erreur', error.message);
+      setFeedback({ kind: 'error', message: error.message });
     } else if (!session) {
-      Alert.alert('Vérifie tes emails', 'Un lien de confirmation a été envoyé !');
+      setFeedback({ kind: 'info', message: 'Vérifie tes emails : un lien de confirmation a été envoyé !' });
     }
     setLoading(false);
   }
@@ -123,6 +125,16 @@ export default function SignupScreen() {
             />
           </View>
 
+          {feedback && (
+            <Text
+              testID="signup-feedback"
+              accessibilityRole="alert"
+              style={[styles.feedback, feedback.kind === 'error' ? styles.feedbackError : styles.feedbackInfo]}
+            >
+              {feedback.message}
+            </Text>
+          )}
+
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={signUpWithEmail}
@@ -151,6 +163,18 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
+  feedback: {
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+    paddingHorizontal: 4,
+  },
+  feedbackError: {
+    color: '#D93025',
+  },
+  feedbackInfo: {
+    color: '#1D8271',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FBFAF8',

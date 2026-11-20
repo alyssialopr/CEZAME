@@ -16,6 +16,31 @@ export function sanitizeTesterName(name: string): string {
     .slice(0, 20);
 }
 
+type AuthErrorLike = { message?: string; code?: string; status?: number } | null | undefined;
+
+/**
+ * Traduit une erreur Supabase Auth en message clair (en français) à afficher
+ * sous le formulaire de connexion.
+ */
+export function getLoginErrorMessage(error: AuthErrorLike): string {
+  const code = error?.code ?? '';
+  const message = (error?.message ?? '').toLowerCase();
+
+  if (code === 'invalid_credentials' || message.includes('invalid login credentials')) {
+    return 'Email ou mot de passe incorrect. Vérifie tes identifiants et réessaie.';
+  }
+  if (code === 'email_not_confirmed' || message.includes('email not confirmed')) {
+    return 'Ton adresse email n’est pas encore confirmée. Clique sur le lien reçu par email.';
+  }
+  if (code === 'over_request_rate_limit' || error?.status === 429) {
+    return 'Trop de tentatives. Patiente quelques instants avant de réessayer.';
+  }
+  if (message.includes('failed to fetch') || message.includes('network')) {
+    return 'Connexion impossible. Vérifie ta connexion internet.';
+  }
+  return 'Connexion impossible pour le moment. Réessaie dans un instant.';
+}
+
 /**
  * Service de gestion des connexions testeurs (Phase de test / MVP).
  * Permet à un utilisateur de rentrer uniquement son nom ou prénom pour tester l'application directement.

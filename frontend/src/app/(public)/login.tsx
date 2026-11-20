@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,11 +11,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, RelativePathString } from 'expo-router';
-import { Mail, Lock, LogIn, FlaskConical, User, ArrowRight, Sparkles } from 'lucide-react-native';
+import { AlertCircle, Mail, Lock, LogIn, FlaskConical, User, ArrowRight, Sparkles } from 'lucide-react-native';
 
 import { supabase } from '@/lib/supabase';
 import { Image } from 'expo-image';
-import { getLastTesterName, signInAsTester } from '@/services/authService';
+import { getLastTesterName, getLoginErrorMessage, signInAsTester } from '@/services/authService';
 
 export default function LoginScreen() {
   const [testerName, setTesterName] = useState('');
@@ -25,6 +24,13 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Messages d'erreur affichés sous les champs (Alert.alert ne s'affiche pas sur le web).
+  const [testerError, setTesterError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  // Refus du serveur (mauvais mot de passe…) : affiché sous « OU CONNEXION COMPTE ».
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Pré-remplir le dernier nom de testeur utilisé
   useEffect(() => {
@@ -35,27 +41,41 @@ export default function LoginScreen() {
 
   async function handleTesterLogin() {
     if (!testerName.trim()) {
-      Alert.alert('Nom requis', 'Merci de renseigner ton nom ou prénom pour débuter la session de test.');
+      setTesterError('Merci de renseigner ton nom ou prénom pour débuter la session de test.');
       return;
     }
 
+    setTesterError(null);
     setTesterLoading(true);
     const result = await signInAsTester(testerName);
-    if (!result.success && result.error) {
-      Alert.alert('Erreur', result.error);
+    if (!result.success) {
+      setTesterError(result.error || 'Impossible de créer la session de test. Réessaie.');
     }
     setTesterLoading(false);
   }
 
   async function signInWithEmail() {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+    if (loading) return;
+    const trimmedEmail = email.trim();
+    const nextEmailError = trimmedEmail ? null : 'Merci de renseigner ton adresse email.';
+    const nextPasswordError = password ? null : 'Merci de renseigner ton mot de passe.';
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+    setLoginError(null);
+    if (nextEmailError || nextPasswordError) return;
 
-    if (error) Alert.alert('Erreur', error.message);
-    setLoading(false);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password,
+      });
+      if (error) setLoginError(getLoginErrorMessage(error));
+    } catch (err: any) {
+      setLoginError(getLoginErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -102,7 +122,7 @@ export default function LoginScreen() {
                 Entre simplement ton nom ou prénom pour commencer le parcours sans mot de passe :
               </Text>
 
-              <View style={styles.testerInputContainer}>
+              <View style={[styles.testerInputContainer, testerError ? styles.inputContainerError : null]}>
                 <User color="#1D8271" size={20} />
                 <TextInput
                   style={styles.input}
@@ -110,11 +130,15 @@ export default function LoginScreen() {
                   placeholder="Ex : Camille, Lucas, Sarah..."
                   placeholderTextColor="#8E929A"
                   value={testerName}
-                  onChangeText={setTesterName}
+                  onChangeText={(value) => {
+                    setTesterName(value);
+                    if (testerError) setTesterError(null);
+                  }}
                   autoCapitalize="words"
                   autoCorrect={false}
                 />
               </View>
+              <FieldError testID="tester-name-error" message={testerError} style={styles.testerErrorSpacing} />
 
               <TouchableOpacity
                 style={[styles.testerButton, testerLoading && styles.buttonDisabled]}
@@ -136,33 +160,63 @@ export default function LoginScreen() {
               <View style={styles.separatorLine} />
             </View>
 
+            {loginError && (
+              <View style={styles.loginErrorBox}>
+                <AlertCircle color={ERROR_COLOR} size={18} style={styles.errorIcon} />
+                <Text
+                  style={styles.errorText}
+                  testID="login-error"
+                  accessibilityRole="alert"
+                  accessibilityLiveRegion="polite"
+                >
+                  {loginError}
+                </Text>
+              </View>
+            )}
+
             {/* FORMULAIRE CLASSIQUE EMAIL / MOT DE PASSE */}
             <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <Mail color="#60646C" size={20} />
-                <TextInput
-                  style={styles.input}
-                  testID="email-input"
-                  placeholder="Email"
-                  placeholderTextColor="#60646C"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
+              <View>
+                <View style={[styles.inputContainer, emailError ? styles.inputContainerError : null]}>
+                  <Mail color={emailError ? ERROR_COLOR : '#60646C'} size={20} />
+                  <TextInput
+                    style={styles.input}
+                    testID="email-input"
+                    placeholder="Email"
+                    placeholderTextColor="#60646C"
+                    value={email}
+                    onChangeText={(value) => {
+                      setEmail(value);
+                      if (emailError) setEmailError(null);
+                      if (loginError) setLoginError(null);
+                    }}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                </View>
+                <FieldError testID="email-error" message={emailError} />
               </View>
 
-              <View style={styles.inputContainer}>
-                <Lock color="#60646C" size={20} />
-                <TextInput
-                  style={styles.input}
-                  testID="password-input"
-                  placeholder="Mot de passe"
-                  placeholderTextColor="#60646C"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                />
+              <View>
+                <View style={[styles.inputContainer, passwordError ? styles.inputContainerError : null]}>
+                  <Lock color={passwordError ? ERROR_COLOR : '#60646C'} size={20} />
+                  <TextInput
+                    style={styles.input}
+                    testID="password-input"
+                    placeholder="Mot de passe"
+                    placeholderTextColor="#60646C"
+                    value={password}
+                    onChangeText={(value) => {
+                      setPassword(value);
+                      if (passwordError) setPasswordError(null);
+                      if (loginError) setLoginError(null);
+                    }}
+                    onSubmitEditing={signInWithEmail}
+                    returnKeyType="go"
+                    secureTextEntry
+                  />
+                </View>
+                <FieldError testID="password-error" message={passwordError} />
               </View>
 
               <TouchableOpacity
@@ -190,6 +244,34 @@ export default function LoginScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+const ERROR_COLOR = '#D93025';
+
+/** Message d'erreur affiché sous un champ, annoncé aux lecteurs d'écran. */
+function FieldError({
+  message,
+  testID,
+  style,
+}: {
+  message: string | null;
+  testID: string;
+  style?: object;
+}) {
+  if (!message) return null;
+  return (
+    <View style={[styles.errorRow, style]}>
+      <AlertCircle color={ERROR_COLOR} size={14} style={styles.errorIcon} />
+      <Text
+        style={styles.errorText}
+        testID={testID}
+        accessibilityRole="alert"
+        accessibilityLiveRegion="polite"
+      >
+        {message}
+      </Text>
+    </View>
   );
 }
 
@@ -341,6 +423,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 52,
     gap: 12,
+  },
+  inputContainerError: {
+    borderColor: ERROR_COLOR,
+    backgroundColor: '#FFF6F5',
+  },
+  loginErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FFF6F5',
+    borderWidth: 1,
+    borderColor: '#F5C2BE',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 14,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  errorIcon: {
+    marginTop: 2,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+    color: ERROR_COLOR,
+  },
+  testerErrorSpacing: {
+    marginTop: -6,
+    marginBottom: 12,
   },
   input: {
     flex: 1,

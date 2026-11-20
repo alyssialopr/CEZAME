@@ -171,6 +171,12 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingVertical: 16,
   },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   progressTrack: {
     flex: 1,
     height: 12,

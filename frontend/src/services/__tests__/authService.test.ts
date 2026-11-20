@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getLastTesterName, sanitizeTesterName, signInAsTester } from '@/services/authService';
+import { getLastTesterName, getLoginErrorMessage, sanitizeTesterName, signInAsTester } from '@/services/authService';
 import { argsOf, callsTo, supabase } from '../../../test/fakeSupabase';
 
 describe('sanitizeTesterName', () => {
@@ -56,5 +56,24 @@ describe('getLastTesterName', () => {
     expect(await getLastTesterName()).toBeNull();
     await AsyncStorage.setItem('@cezame_last_tester_name', 'Zoé');
     expect(await getLastTesterName()).toBe('Zoé');
+  });
+});
+
+describe('getLoginErrorMessage', () => {
+  it('signale clairement un mauvais mot de passe', () => {
+    const msg = 'Email ou mot de passe incorrect. Vérifie tes identifiants et réessaie.';
+    expect(getLoginErrorMessage({ code: 'invalid_credentials', message: 'Invalid login credentials' })).toBe(msg);
+    // Anciennes versions de Supabase : pas de code, seulement le message.
+    expect(getLoginErrorMessage({ message: 'Invalid login credentials' })).toBe(msg);
+  });
+
+  it('distingue email non confirmé, limite de tentatives et réseau', () => {
+    expect(getLoginErrorMessage({ code: 'email_not_confirmed' })).toMatch(/pas encore confirmée/);
+    expect(getLoginErrorMessage({ status: 429 })).toMatch(/Trop de tentatives/);
+    expect(getLoginErrorMessage({ message: 'Failed to fetch' })).toMatch(/connexion internet/);
+  });
+
+  it('a un message par défaut', () => {
+    expect(getLoginErrorMessage(null)).toMatch(/Connexion impossible/);
   });
 });
