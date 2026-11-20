@@ -24,6 +24,7 @@ import {
   Info,
   LogOut,
   MessageSquareHeart,
+  RefreshCw,
   RotateCcw,
   Sparkles,
   Star,
@@ -37,6 +38,7 @@ import { useAuth } from '@/providers/AuthProvider';
 import { useTutorial } from '@/providers/TutorialProvider';
 import { useProgress } from '@/hooks/useProgress';
 import { useRewards } from '@/hooks/useRewards';
+import { useServiceWorker } from '@/hooks/useServiceWorker';
 import { supabase } from '@/lib/supabase';
 import { tracker } from '@/services/trackerService';
 
@@ -47,6 +49,14 @@ export default function SettingsScreen() {
   const { data: progress } = useProgress();
   const { requestTutorial } = useTutorial();
   const { resetRewards } = useRewards();
+  const {
+    isSupported: isPwaSupported,
+    updateAvailable,
+    isChecking: isCheckingUpdate,
+    checkForUpdate,
+    applyUpdate,
+  } = useServiceWorker();
+  const [updateStatusText, setUpdateStatusText] = useState<string | null>(null);
 
   // Préférences utilisateur (états locaux pour le test)
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -229,6 +239,24 @@ export default function SettingsScreen() {
     ]);
   };
 
+  // 5. Vérification / installation de mise à jour PWA
+  const handleAppUpdatePress = async () => {
+    if (updateAvailable) {
+      applyUpdate();
+      return;
+    }
+
+    setUpdateStatusText('Vérification en cours...');
+    const result = await checkForUpdate();
+    if (result === 'update-available') {
+      setUpdateStatusText('Nouvelle version prête ! Appuie pour recharger.');
+    } else if (result === 'up-to-date') {
+      setUpdateStatusText('Tu utilises déjà la dernière version.');
+    } else {
+      setUpdateStatusText(null);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* HEADER */}
@@ -389,7 +417,7 @@ export default function SettingsScreen() {
               </View>
             </View>
 
-            <View style={styles.row}>
+            <View style={[styles.row, isPwaSupported ? styles.rowBorder : null]}>
               <View style={styles.rowTextContainer}>
                 <Text style={styles.rowTitle}>Mission Cézame</Text>
                 <Text style={styles.rowSubtitle}>
@@ -397,6 +425,46 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </View>
+
+            {isPwaSupported && (
+              <TouchableOpacity
+                style={styles.row}
+                onPress={handleAppUpdatePress}
+                disabled={isCheckingUpdate}
+                activeOpacity={0.7}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: updateAvailable ? '#DCFCE7' : '#F1F5F9' },
+                  ]}>
+                  <RefreshCw
+                    size={18}
+                    color={updateAvailable ? '#16A34A' : '#475569'}
+                  />
+                </View>
+                <View style={styles.rowTextContainer}>
+                  <Text
+                    style={[
+                      styles.rowTitle,
+                      updateAvailable ? { color: '#15803D' } : null,
+                    ]}>
+                    {updateAvailable
+                      ? 'Mise à jour disponible'
+                      : 'Vérifier les mises à jour'}
+                  </Text>
+                  <Text style={styles.rowSubtitle}>
+                    {updateAvailable
+                      ? "Appuie pour installer la dernière version de l'app"
+                      : updateStatusText ??
+                        'Mettre à jour le cache hors-ligne de Cézame'}
+                  </Text>
+                </View>
+                <ChevronRight
+                  size={18}
+                  color={updateAvailable ? '#16A34A' : '#94A3B8'}
+                />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 

@@ -15,6 +15,7 @@ import { TutorialProvider } from '@/providers/TutorialProvider';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useEffect, useRef } from 'react';
+import { initServiceWorker } from '@/services/pwaService';
 import { tracker } from '@/services/trackerService';
 
 function RouteObserver() {
@@ -33,6 +34,10 @@ function RouteObserver() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    initServiceWorker();
+  }, []);
 
   const content = (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
